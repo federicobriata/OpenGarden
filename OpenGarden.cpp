@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License 
  *  along with this program.  If not, see http://www.gnu.org/licenses/. 
  *  
- *  Version:           2.2
+ *  Version:           2.3
  *  Design:            David Gascón 
  *  Implementation:    Victor Boria, Luis Martin & Jorge Casanova
  */
@@ -415,6 +415,7 @@ float OpenGardenClass::readAirHumidity() {
 
 float OpenGardenClass::readSoilTemperature() {
   sensors.requestTemperatures(); // Send the command to get temperatures
+  delay(500);
   return sensors.getTempCByIndex(0);
 }
 
