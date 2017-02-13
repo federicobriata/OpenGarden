@@ -68,14 +68,16 @@
 #define SPI_MOSI    5     // PA5, pin 8
 #define SPI_SCK     6     // PA4, pin 9
 
-#elif defined(__AVR_ATmega32U4__) //Arduino Leonardo 
+#elif defined(__AVR_ATmega32U4__) //Arduino Leonardo, YUN
 
-#define RFM_IRQ     0	    // PD0, INT0, Digital3 
+//#define RFM_IRQ     0	    // PD0, pin 18, INT0, Digital3
+#define RFM_IRQ     1	    // PD1, pin 19, INT1, Digital2
 #define SS_DDR      DDRB
 #define SS_PORT     PORTB
-#define SS_BIT      6	    // Dig10, PB6
+#define SS_BIT      6	    // PB6, pin 30, Digital10
 
-#define SPI_SS      17    // PB0, pin 8, Digital17
+#define SPI_SS      10     // PB6, pin 30, Digital10
+//#define SPI_SS      17     // PB0, pin 8, Digital17 (RXLED)
 #define SPI_MISO    14    // PB3, pin 11, Digital14
 #define SPI_MOSI    16    // PB2, pin 10, Digital16
 #define SPI_SCK     15    // PB1, pin 9, Digital15
@@ -617,9 +619,9 @@ uint8_t rf12_initialize (uint8_t id, uint8_t band, uint8_t g) {
     #endif
 #else
     if ((nodeid & NODE_ID) != 0)
-        attachInterrupt(0, rf12_interrupt, LOW);
+        attachInterrupt(RFM_IRQ, rf12_interrupt, LOW);
     else
-        detachInterrupt(0);
+        detachInterrupt(RFM_IRQ);
 #endif
     
     return nodeid;
