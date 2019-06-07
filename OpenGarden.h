@@ -66,7 +66,7 @@
 #define node7 6 //Node:6->Buffer:5
 
 #define irrigation1 6
-#define irrigation2 7
+#define irrigation2 11
 #define irrigation3 9
 
 #define RF12_NORMAL_SENDWAIT 0
