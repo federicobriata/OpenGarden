@@ -62,6 +62,19 @@ protected:
     /// @return Arduino analog pin number of a Port's A pin (uint8_t).
     inline uint8_t anaPin() const
         { return 11 - 2 * portNum; }
+#elif defined(__AVR_ATmega2560__)
+	/// @return Arduino digital pin number of a Port's D pin (uint8_t).
+    inline uint8_t digiPin() const
+        { return portNum ? portNum + 3 : 20; }
+	/// @return Arduino digital pin number of a Port's A pin (uint8_t).
+    inline uint8_t digiPin2() const
+        { return portNum ? portNum + 13 : 21; }
+	/// @return Arduino digital pin number of the I pin on all Ports (uint8_t).
+    static uint8_t digiPin3()
+        { return 3; }
+    /// @return Arduino analog pin number of a Port's A pin (uint8_t).
+    inline uint8_t anaPin() const
+        { return portNum - 1; }
 #else
 	/// @return Arduino digital pin number of a Port's D pin (uint8_t).
     inline uint8_t digiPin() const
@@ -345,6 +358,10 @@ public:
     
     /// enter low-power mode, wake up with watchdog, INT0/1, or pin-change
     static void powerDown ();
+
+    /// flushes pending data in Serial and then enter low-power mode, wake up
+    /// with watchdog, INT0/1, or pin-change
+    static void flushAndPowerDown ();
     
     /// Spend some time in low-power mode, the timing is only approximate.
     /// @param msecs Number of milliseconds to sleep, in range 0..65535.
@@ -517,6 +534,19 @@ public:
     word calcLux(byte iGain =0, byte tInt =2) const;
 };
 
+// Interface for the HYT131 thermometer/hygrometer - see http://jeelabs.org/2012/06/30/new-hyt131-sensor/
+class HYT131 : public DeviceI2C {
+public:
+    // Constructor for the HYT131 sensor.
+    HYT131 (PortI2C& port) : DeviceI2C (port, 0x28) {}
+    
+    // Execute a reading; results are in tenths of degrees and percent, respectively
+    // @param temp in which to store the temperature (int, tenths of degrees C)
+    // @param humi in which to store the humidity (int, tenths of percent)
+    // @param delayFun (optional) supply delayFun that takes ms delay as argument, for low-power waiting during reading (e.g. Sleepy::loseSomeTime()). By default, delay() is used
+    void reading (int& temp, int& humi, byte (*delayFun)(word ms) =0);
+};
+
 /// Interface for the Gravity Plug - see http://jeelabs.org/gp
 class GravityPlug : public DeviceI2C {
     /// Data storage for getAxes() and sensitivity()
@@ -535,6 +565,9 @@ public:
     /// Get accelleration data from GravityPlug.
     /// @return An array with 3 integers. (x,y,z) respectively.
     const int* getAxes();
+    /// Read out the temperature (only for BMA150, not the older BMA020)
+    /// @return temp, in half deg C steps, from -30C to +50C (i.e. times 2)
+    char temperature();
 };
 
 /// Interface for the Input Plug - see http://jeelabs.org/ip

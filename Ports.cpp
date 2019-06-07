@@ -641,6 +641,15 @@ const int* GravityPlug::getAxes() {
     return data.w;
 }
 
+char GravityPlug::temperature() {
+    send();
+    write(0x08);
+    receive();
+    char temp = read(1) - 60;
+    stop();
+    return temp;
+}
+
 /** Select the channel on the multiplexer.
  *  @param channel A number between 0..15.
  */
@@ -945,6 +954,30 @@ long AnalogPlug::reading () {
   return raw;
 }
 
+void HYT131::reading (int& temp, int& humi, byte (*delayFun)(word ms)) {
+    // Start measurement
+    send();
+    stop();
+    
+    // Wait for completion (using user-supplied (low-power?) delay function)
+    if (delayFun)
+        delayFun(100);
+    else
+        delay(100);
+    
+    // Extract readings
+    receive();
+    uint16_t h = (read(0) & 0x3F) << 8;
+    h |= read(0);
+    uint16_t t = read(0) << 6;
+    t |= read(1) >> 2;
+    
+    // convert 0..16383 to 0..100% (*10)
+    humi = (h * 1000L >> 14);
+    // convert 0..16383 to -40 .. 125 (*10)
+    temp = (t * 1650L >> 14) - 400;
+}
+
 DHTxx::DHTxx (byte pinNum) : pin (pinNum) {
   digitalWrite(pin, HIGH);
 }
@@ -1032,6 +1065,7 @@ const word* ColorPlug::getData () {
     send();
     write(0x80 | BLOCKREAD); // write to Blockread register
     receive();
+    read(0); //read SMBus size (always 8)
     data.b[2] = read(0); // green low
     data.b[3] = read(0); // green high
     data.b[0] = read(0); // red low
@@ -1065,19 +1099,21 @@ const word* ColorPlug::chromaCCT () {
 // ISR(WDT_vect) { Sleepy::watchdogEvent(); }
 
 static volatile byte watchdogCounter;
+static byte backupMode = 0;
 
 void Sleepy::watchdogInterrupts (char mode) {
+#ifndef WDTCSR
+#define WDTCSR WDTCR
+#endif
     // correct for the fact that WDP3 is *not* in bit position 3!
     if (mode & bit(3))
         mode ^= bit(3) | bit(WDP3);
     // pre-calculate the WDTCSR value, can't do it inside the timed sequence
     // we only generate interrupts, no reset
-    byte wdtcsr = mode >= 0 ? bit(WDIE) | mode : 0;
+    byte wdtcsr = mode >= 0 ? bit(WDIE) | mode : backupMode;
+    if(mode>=0) backupMode = WDTCSR;
     MCUSR &= ~(1<<WDRF);
     ATOMIC_BLOCK(ATOMIC_FORCEON) {
-#ifndef WDTCSR
-#define WDTCSR WDTCR
-#endif
         WDTCSR |= (1<<WDCE) | (1<<WDE); // timed sequence
         WDTCSR = wdtcsr;
     }
@@ -1100,6 +1136,12 @@ void Sleepy::powerDown () {
     sleep_disable();
     // re-enable what we disabled
     ADCSRA = adcsraSave;
+}
+
+/// This method waits Serial to send data via UART before powering down.
+void Sleepy::flushAndPowerDown () {
+    Serial.flush();
+    powerDown();
 }
 
 byte Sleepy::loseSomeTime (word msecs) {

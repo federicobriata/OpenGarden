@@ -6,6 +6,10 @@
 /// @file
 /// RFM12B driver definitions
 
+// Modify the RF12 driver in such a way that it can inter-operate with RFM69
+// modules running in "native" mode. This affects packet layout and some more.
+#define RF12_COMPAT 0
+
 #include <stdint.h>
 
 /// RFM12B Protocol version.
@@ -15,6 +19,19 @@
 
 /// Shorthand for RFM12B group byte in rf12_buf.
 #define rf12_grp        rf12_buf[0]
+
+#if RF12_COMPAT
+#define rf12_len        (rf12_buf[1] - 2)
+#define rf12_dst        rf12_buf[2]       // parity bits and dest addr
+#define rf12_hdr        rf12_buf[3]       // flag bits and origin addr
+#define rf12_data       (rf12_buf + 4)
+
+#define RF12_HDR_CTL    0x80
+#define RF12_HDR_DST    0     // never set in native RF69 packets
+#define RF12_HDR_ACK    0x40
+#define RF12_HDR_MASK   0x3F
+#else
+
 /// Shorthand for RFM12B header byte in rf12_buf.
 #define rf12_hdr        rf12_buf[1]
 /// Shorthand for RFM12B length byte in rf12_buf.
@@ -31,6 +48,8 @@
 /// RFM12B HDR bit mask.
 #define RF12_HDR_MASK   0x1F
 
+#endif
+
 /// RFM12B Maximum message size in bytes.
 #define RF12_MAXDATA    66
 
@@ -39,17 +58,18 @@
 #define RF12_915MHZ     3   ///< RFM12B 915 MHz frequency band.
 
 // EEPROM address range used by the rf12_config() code
-#define RF12_EEPROM_ADDR ((uint8_t*) 0x20)  ///< Starting offset.
-#define RF12_EEPROM_SIZE 32                 ///< Number of bytes.
-#define RF12_EEPROM_EKEY (RF12_EEPROM_ADDR + RF12_EEPROM_SIZE) ///< EE start.
-#define RF12_EEPROM_ELEN 16                 ///< EE number of bytes.
+#define RF12_EEPROM_ADDR    ((uint8_t*) 0x20)  ///< Starting offset.
+#define RF12_EEPROM_SIZE    16                 ///< Number of bytes.
+#define RF12_EEPROM_EKEY    ((uint8_t*) 0x40)  ///< EE start, same as before.
+#define RF12_EEPROM_ELEN    16                 ///< EE number of bytes.
+#define RF12_EEPROM_VERSION 1                  ///< Only this version is valid.
 
 /// Shorthand to simplify detecting a request for an ACK.
 #define RF12_WANTS_ACK ((rf12_hdr & RF12_HDR_ACK) && !(rf12_hdr & RF12_HDR_CTL))
 /// Shorthand to simplify sending out the proper ACK reply.
 #define RF12_ACK_REPLY (rf12_hdr & RF12_HDR_DST ? RF12_HDR_CTL : \
             RF12_HDR_CTL | RF12_HDR_DST | (rf12_hdr & RF12_HDR_MASK))
-            
+
 // options for RF12_sleep()
 #define RF12_SLEEP 0        ///< Enter sleep mode.
 #define RF12_WAKEUP -1      ///< Wake up from sleep mode.
@@ -69,11 +89,16 @@ void rf12_set_cs(uint8_t pin);
 void rf12_spiInit(void);
 
 /// Call this once with the node ID, frequency band, and optional group.
-uint8_t rf12_initialize(uint8_t id, uint8_t band, uint8_t group=0xD4);
+uint8_t rf12_initialize(uint8_t id, uint8_t band, uint8_t group=0xD4, uint16_t frequency=1600);
 
 /// Initialize the RFM12B module from settings stored in EEPROM by "RF12demo"
 /// don't call rf12_initialize() if you init the hardware with rf12_config().
-/// @return the node ID as 1..31 value (1..26 correspond to nodes 'A'..'Z').
+/// @return the node ID as 1..31, or 0 if there is no config on EEPROM.
+uint8_t rf12_configSilent();
+/// Call this to send a description of the EEPROM settings to the serial port.
+void rf12_configDump();
+
+/// @deprecated Please switch over to rf12_configSilent() and rf12_configDump().
 uint8_t rf12_config(uint8_t show =1);
 
 /// Call this frequently, returns true if a packet has been received.
@@ -87,8 +112,6 @@ uint8_t rf12_canSend(void);
 void rf12_sendStart(uint8_t hdr);
 /// Call this only when rf12_recvDone() or rf12_canSend() return true.
 void rf12_sendStart(uint8_t hdr, const void* ptr, uint8_t len);
-/// Deprecated: use rf12_sendStart(hdr,ptr,len) followed by rf12_sendWait(sync).
-void rf12_sendStart(uint8_t hdr, const void* ptr, uint8_t len, uint8_t sync);
 /// This variant loops on rf12_canSend() and then calls rf12_sendStart() asap.
 void rf12_sendNow(uint8_t hdr, const void* ptr, uint8_t len);
 
@@ -119,12 +142,15 @@ char rf12_easySend(const void* data, uint8_t size);
 /// Enable encryption (null arg disables it again).
 void rf12_encrypt(const uint8_t*);
 
+/// Enable raw receive mode with fixed packet length.
+void rf12_setRawRecvMode(uint8_t fixed_pkt_len);
+
 /// Low-level control of the RFM12B via direct register access.
 /// http://tools.jeelabs.org/rfm12b is useful for calculating these.
 uint16_t rf12_control(uint16_t cmd);
 
 /// See http://blog.strobotics.com.au/2009/07/27/rfm12-tutorial-part-3a/
-/// Transmissions are packetized, don't assume you can sustain these speeds! 
+/// Transmissions are packetized, don't assume you can sustain these speeds!
 ///
 /// @note Data rates are approximate. For higher data rates you may need to
 /// alter receiver radio bandwidth and transmitter modulator bandwidth.
