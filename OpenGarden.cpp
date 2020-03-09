@@ -22,6 +22,7 @@
  *  Implementation:    Victor Boria, Luis Martin & Jorge Casanova
  */
 
+#include <Console.h>
 #include "OpenGarden.h" 
 #include "Wire.h" 
 #include "DHT.h" 
@@ -114,23 +115,23 @@ Payload OpenGardenClass::getNodeData(uint8_t node){
 void OpenGardenClass::printNode(Payload nodePacket){
 
   if (nodePacket.temperature == 0 && nodePacket.humidity == 0 && nodePacket.moisture == 0 && nodePacket.light == 0 && nodePacket.supplyV == 0){
-    Serial.println("No node connected");
+    Console.println("No node connected");
   }
   else{
-    Serial.print("Temperature:");
-    Serial.print(nodePacket.temperature);
-    Serial.println("*C");
-    Serial.print("Humidity:");
-    Serial.print(nodePacket.humidity);
-    Serial.println("%RH");
-    Serial.print("Soil Moisture:");
-    Serial.println(nodePacket.moisture);
-    Serial.print("Luminosity:");
-    Serial.print(nodePacket.light);
-    Serial.println("%");
-    Serial.print("Battery Voltage:");
-    Serial.print(nodePacket.supplyV);
-    Serial.println("mV");
+    Console.print("Temperature:");
+    Console.print(nodePacket.temperature);
+    Console.println("*C");
+    Console.print("Humidity:");
+    Console.print(nodePacket.humidity);
+    Console.println("%RH");
+    Console.print("Soil Moisture:");
+    Console.println(nodePacket.moisture);
+    Console.print("Luminosity:");
+    Console.print(nodePacket.light);
+    Console.println("%");
+    Console.print("Battery Voltage:");
+    Console.print(nodePacket.supplyV);
+    Console.println("mV");
   }
 }
 
@@ -140,22 +141,22 @@ void OpenGardenClass::debugRF(void){
     nodeID = rf12_hdr & 0x1F;  // get node ID
     airPacket = *(Payload*) rf12_data;
 
-    Serial.print("Received packet from node ");
-    Serial.println(nodeID);
-    Serial.print("Temperature:");
-    Serial.print(airPacket.temperature);
-    Serial.println("*C");
-    Serial.print("Humidity:");
-    Serial.print(airPacket.humidity);
-    Serial.println("%RH");
-    Serial.print("Soil Moisture:");
-    Serial.println(airPacket.moisture);
-    Serial.print("Luminosity:");
-    Serial.println(airPacket.light);
-    Serial.print("Battery Voltage:");
-    Serial.print(airPacket.supplyV);
-    Serial.println("mV");
-    Serial.println("***************");
+    Console.print("Received packet from node ");
+    Console.println(nodeID);
+    Console.print("Temperature:");
+    Console.print(airPacket.temperature);
+    Console.println("*C");
+    Console.print("Humidity:");
+    Console.print(airPacket.humidity);
+    Console.println("%RH");
+    Console.print("Soil Moisture:");
+    Console.println(airPacket.moisture);
+    Console.print("Luminosity:");
+    Console.println(airPacket.light);
+    Console.print("Battery Voltage:");
+    Console.print(airPacket.supplyV);
+    Console.println("mV");
+    Console.println("***************");
 
     if (RF12_WANTS_ACK) {           // Send ACK if requested
       rf12_sendStart(RF12_ACK_REPLY, 0, 0);
@@ -180,162 +181,162 @@ DateTime OpenGardenClass::getTime(void){
 
 void OpenGardenClass::printTime(DateTime now){
 
-  Serial.print(now.month(), DEC);
-  Serial.print("/");
+  Console.print(now.month(), DEC);
+  Console.print("/");
 
-  Serial.print(now.day(), DEC);
-  Serial.print("/");
+  Console.print(now.day(), DEC);
+  Console.print("/");
 
-  Serial.print(now.year(), DEC);
-  Serial.print(" ");
+  Console.print(now.year(), DEC);
+  Console.print(" ");
 
   switch (now.dayOfWeek()) // Friendly printout the weekday
   {
   case 1:
-    Serial.print("MON");
+    Console.print("MON");
     break;
   case 2:
-    Serial.print("TUE");
+    Console.print("TUE");
     break;
   case 3:
-    Serial.print("WED");
+    Console.print("WED");
     break;
   case 4:
-    Serial.print("THU");
+    Console.print("THU");
     break;
   case 5:
-    Serial.print("FRI");
+    Console.print("FRI");
     break;
   case 6:
-    Serial.print("SAT");
+    Console.print("SAT");
     break;
   case 7:
-    Serial.print("SUN");
+    Console.print("SUN");
     break;
   }
-  Serial.print(" ");
+  Console.print(" ");
 
   if(now.hour()<10){
     switch (now.hour()) 
     {
     case 0:
-      Serial.print("00");
+      Console.print("00");
       break;
     case 1:
-      Serial.print("01");
+      Console.print("01");
       break;
     case 2:
-      Serial.print("02");
+      Console.print("02");
       break;
     case 3:
-      Serial.print("03");
+      Console.print("03");
       break;
     case 4:
-      Serial.print("04");
+      Console.print("04");
       break;
     case 5:
-      Serial.print("05");
+      Console.print("05");
       break;
     case 6:
-      Serial.print("06");
+      Console.print("06");
       break;
     case 7:
-      Serial.print("07");
+      Console.print("07");
       break;
     case 8:
-      Serial.print("08");
+      Console.print("08");
       break;
     case 9:
-      Serial.print("09");
+      Console.print("09");
       break;	 
     }
   }
   else{
-    Serial.print(now.hour(), DEC);
+    Console.print(now.hour(), DEC);
   }
 
-  Serial.print(":");
+  Console.print(":");
 
   if(now.minute()<10){
     switch (now.minute()) 
     {
     case 0:
-      Serial.print("00");
+      Console.print("00");
       break;
     case 1:
-      Serial.print("01");
+      Console.print("01");
       break;
     case 2:
-      Serial.print("02");
+      Console.print("02");
       break;
     case 3:
-      Serial.print("03");
+      Console.print("03");
       break;
     case 4:
-      Serial.print("04");
+      Console.print("04");
       break;
     case 5:
-      Serial.print("05");
+      Console.print("05");
       break;
     case 6:
-      Serial.print("06");
+      Console.print("06");
       break;
     case 7:
-      Serial.print("07");
+      Console.print("07");
       break;
     case 8:
-      Serial.print("08");
+      Console.print("08");
       break;
     case 9:
-      Serial.print("09");
+      Console.print("09");
       break;
 
     }
   }
   else{
-    Serial.print(now.minute(), DEC);
+    Console.print(now.minute(), DEC);
   }
 
-  Serial.print(":");
+  Console.print(":");
 
   if(now.second()<10){
     switch (now.second()) 
     {
     case 0:
-      Serial.print("00");
+      Console.print("00");
       break;
     case 1:
-      Serial.print("01");
+      Console.print("01");
       break;
     case 2:
-      Serial.print("02");
+      Console.print("02");
       break;
     case 3:
-      Serial.print("03");
+      Console.print("03");
       break;
     case 4:
-      Serial.print("04");
+      Console.print("04");
       break;
     case 5:
-      Serial.print("05");
+      Console.print("05");
       break;
     case 6:
-      Serial.print("06");
+      Console.print("06");
       break;
     case 7:
-      Serial.print("07");
+      Console.print("07");
       break;
     case 8:
-      Serial.print("08");
+      Console.print("08");
       break;
     case 9:
-      Serial.print("09");
+      Console.print("09");
       break;
 
     }
   }
   else{
-    Serial.print(now.second(), DEC);
+    Console.print(now.second(), DEC);
   }
 
 }
