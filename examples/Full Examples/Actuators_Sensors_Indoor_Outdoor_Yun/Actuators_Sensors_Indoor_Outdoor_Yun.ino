@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see http://www.gnu.org/licenses/.
  *
- *  Version:           3.0
+ *  Version:           3.1
  *  Implementation:    Federico Pietro Briata, Torino June 2019
  *
  *  The original time parser code come from TimeCheck example of Tom Igoe but the code was taken from ebolisa (TIA) that added a
@@ -28,12 +28,12 @@
  *  -------------
  *  PIN0                           Not used (UART)               PIN0
  *  PIN1                           Not used (UART)               PIN1
- *  PIN2                           RF Transceiver (IRQ)          PIN7
+ *  PIN2                           RF Transceiver (IRQ)          PIN2
  *  PIN3                           RF Power Strip Data In/Out    Not tested
  *  PIN4                           DHT22 Data In                 PIN4
  *  PIN5                           DS18B20 Data In               Not tested
  *  PIN6                           Irrigation 1(PWM)             PIN6
- *  PIN7                           Irrigation 2                  PIN11
+ *  PIN7                           Irrigation 2                  PIN7
  *  PIN8                           Vcc Sensors                   PIN8
  *  PIN9                           Irrigation 3(PWM)             PIN9
  *  PIN10                          RF Transceiver (SPI-SS)       PIN10
@@ -50,8 +50,8 @@
  *  ANALOG1                        pH sensor                     ANALOG1
  *  ANALOG2                        Soil moisture sensor          ANALOG2
  *  ANALOG3                        LDR sensor                    ANALOG3
- *  ANALOG4                        RTC (I2C-SDA)                 Not used
- *  ANALOG5                        RTC (I2C-SCL)                 Not used
+ *  ANALOG4                        RTC (I2C-SDA)                 Not usable
+ *  ANALOG5                        RTC (I2C-SCL)                 Not usable
  *  Not exist                      Free                          ANALOG4
  *  Not exist                      Free                          ANALOG5
  */
