@@ -37,6 +37,7 @@
  *  PIN8                           Vcc Sensors                   PIN8
  *  PIN9                           Irrigation 3(PWM)             PIN9
  *  PIN10                          RF Transceiver (SPI-SS)       PIN10
+ *  Not exist                      Free                          PIN11
  *  Not exist                      Free                          PIN12/ANALOG11
  *  Not exist                      Free                          PIN13/LED13
  *  PIN11                          RF Transceiver (SPI-SDI)      PIN16/ICSP-4
@@ -52,8 +53,8 @@
  *  ANALOG3                        LDR sensor                    ANALOG3
  *  ANALOG4                        RTC (I2C-SDA)                 Not usable
  *  ANALOG5                        RTC (I2C-SCL)                 Not usable
- *  Not exist                      Free                          ANALOG4
- *  Not exist                      Free                          ANALOG5
+ *  Not exist                      Free                          ANALOG4/PIN22
+ *  Not exist                      Free                          ANALOG5/PIN23
  */
 
 #include <Process.h>
