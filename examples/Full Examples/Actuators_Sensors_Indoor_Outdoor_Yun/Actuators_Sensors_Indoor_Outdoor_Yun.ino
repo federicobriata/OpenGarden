@@ -52,8 +52,8 @@
  *  ANALOG3                        LDR sensor                    ANALOG3
  *  ANALOG4                        RTC (I2C-SDA)                 Not used
  *  ANALOG5                        RTC (I2C-SCL)                 Not used
- *  Not exist                      Free                          ANALOG4
- *  Not exist                      Free                          ANALOG5
+ *  Not exist                      Free                          ANALOG4/PIN22
+ *  Not exist                      Free                          ANALOG5/PIN23
  */
 
 #include <Process.h>
