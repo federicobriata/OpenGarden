@@ -37,8 +37,8 @@
  *  PIN8                           Vcc Sensors                   PIN8
  *  PIN9                           Irrigation 3(PWM)             PIN9
  *  PIN10                          RF Transceiver (SPI-SS)       PIN10
- *  Not exist                      Free                          PIN12
- *  Not exist                      Free                          PIN13
+ *  Not exist                      Free                          PIN12/ANALOG11
+ *  Not exist                      Free                          PIN13/LED13
  *  PIN11                          RF Transceiver (SPI-SDI)      PIN16/ICSP-4
  *  PIN12                          RF Transceiver (SPI-SDO)      PIN14/ICSP-1
  *  PIN13                          RF Transceiver (SPI-SCK)      PIN15/ICSP-3
