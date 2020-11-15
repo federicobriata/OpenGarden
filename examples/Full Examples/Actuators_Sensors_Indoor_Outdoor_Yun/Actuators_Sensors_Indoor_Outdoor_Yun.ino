@@ -22,9 +22,9 @@
  *  The logic of main loop is inspired on "Sensors Indoor and Outdoor" example from Victor Boria, Luis Martin & Jorge Casanova (Cooking-hacks).
  *  
  *  Pinout
- *  ATMEL ATMEGA328P / ARDUINO UNO / Open Garden  Shield  ||  ATMEL ATMEGA32U4 / ARDUINO Yún
+ *  ARDUINO UNO          ||     Open Garden  Shield     ||     ARDUINO Yún/YúnShield
  *  
- *  Digital Pins
+ *  Digital Strip
  *  -------------
  *  PIN0                           Not used (UART)               PIN0
  *  PIN1                           Not used (UART)               PIN1
@@ -44,7 +44,7 @@
  *  PIN13                          RF Transceiver (SPI-SCK)      PIN15/ICSP-3
  *  Not exist                      Irrigation 4                  PIN17/RXLED
  *  
- *  Analog Pins
+ *  Analog Strip
  *  -----------
  *  ANALOG0                        EC sensor                     ANALOG0
  *  ANALOG1                        pH sensor                     ANALOG1
@@ -63,22 +63,22 @@
 //#include <Wire.h>
 #include <HttpClient.h>
 
-#define SEND_EMONDATA
 //#define DEBUG_MODE
 
-#ifdef DEBUG_MODE
-#define DEBUG_PRINT(x) Console.print(x)       // open Console via Network Bridge
-#define DEBUG_PRINTLN(x) Console.println(x)
-//#define DEBUG_PRINT(x) Serial.print(x)      // open Serial via USB-Serial
-//#define DEBUG_PRINTLN(x) Serial.println(x)
-//#define DEBUG_PRINT(x) Serial1.print(x)     // open Serial1 to Linux /dev/ttyATH0
-//#define DEBUG_PRINTLN(x) Serial1.println(x) // Do not use it when Bridge is enabled
-//#define DEBUG_WIFI
-#define DEBUG_NTP
-#define DEBUG_DATA
+#ifdef DEBUG_MODE                               // Open Serial Console for debug
+  #define DEBUG_PRINT(x) Console.print(x)       // Console via Network Bridge
+  #define DEBUG_PRINTLN(x) Console.println(x)
+  //#define DEBUG_PRINT(x) Serial.print(x)      // Console via USB-Serial
+  //#define DEBUG_PRINTLN(x) Serial.println(x)
+  //#define DEBUG_PRINT(x) Serial1.print(x)     // Console via Serial1 to Linux /dev/ttyATH0, do not use it when Bridge is enabled
+  //#define DEBUG_PRINTLN(x) Serial1.println(x)
+  //#define DEBUG_WIFI                          // Print Wifi Signal Strength
+  #define DEBUG_NTP                             // Print Time
+  #define DEBUG_DATA                            // Print Data collected
 #else
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
+  #define SEND_EMONDATA                         // Send Data over the Emon Server
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
 #endif
 
 Process date;                 // process used to get the datetime
@@ -86,13 +86,13 @@ String dayOfWeek;
 int days, months, years, hours, minutes, seconds;  // for the results
 int lastSecond = -1;          // need an impossible value for comparison
 
-// Calibratie EC
+// Calibrate EC
 //#define point_1_cond 40000 // Write here your EC calibration value of the solution 1 in µS/cm
 //#define point_1_cal 40 // Write here your EC value measured in resistance with solution 1
 //#define point_2_cond 10500 // Write here your EC calibration value of the solution 2 in µS/cm
 //#define point_2_cal 120 // Write here your EC value measured in resistance with solution 2
 
-// Calibratie pH
+// Calibrate pH
 //#define calibration_point_4 2246 //Write here your measured value in mV of pH 4
 //#define calibration_point_7 2080 //Write here your measured value in mV of pH 7
 //#define calibration_point_10 1894 //Write here your measured value in mV of pH 10
@@ -100,57 +100,11 @@ int lastSecond = -1;          // need an impossible value for comparison
 HttpClient www;
 String updateURL;
 
-void getDateTime() {
-    if (!date.running()) {
-        date.begin("date");
-        date.addParameter("+%d/%m/%Y-%a-%T");
-        date.run();
-    }
-}
-
-void setDateTime() {
-    //if there's a result from the date process, parse it:
-    while (date.available() > 0) {
-
-        // get the result of the date process (should be hh:mm:ss):
-        String timeString = date.readString();
-        timeString.trim();
-
-        // find the slashes /
-        int firstSlash = timeString.indexOf("/");
-        int secondSlash = timeString.lastIndexOf("/");
-
-        // find the dashes -
-        int firstDash = timeString.indexOf("-");
-        int secondDash = timeString.lastIndexOf("-");
-
-        // find the colons:
-        int firstColon = timeString.indexOf(":");
-        int secondColon = timeString.lastIndexOf(":");
-
-        // get the substrings for date and time
-        String dayString = timeString.substring(0, firstSlash);
-        String monthString = timeString.substring(firstSlash + 1, secondSlash);
-        String yearString = timeString.substring(secondSlash + 1, firstDash);
-        dayOfWeek = timeString.substring(firstDash + 1, secondDash);
-        String hourString = timeString.substring(secondDash + 1, firstColon);
-        String minString = timeString.substring(firstColon + 1, secondColon);
-        String secString = timeString.substring(secondColon + 1);
-
-        // convert to ints
-        days = dayString.toInt();
-        months = monthString.toInt();
-        years = yearString.toInt();
-        hours = hourString.toInt();
-        minutes = minString.toInt();
-
-        // saving the previous seconds to do a time comparison
-        lastSecond = seconds;
-        seconds = secString.toInt();
-    }
-}
-
 void setup() {
+    OpenGarden.initIrrigation(1); //Initialize irrigation 1
+    OpenGarden.initIrrigation(2); //Initialize irrigation 2
+    OpenGarden.initIrrigation(3); //Initialize irrigation 3
+
     pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
     Bridge.begin();    // Bridge takes about two seconds to start up
@@ -164,13 +118,9 @@ void setup() {
 
     OpenGarden.initSensors();     //Initialize sensors power
     OpenGarden.sensorPowerON();   //Turn On the sensors
-    OpenGarden.initIrrigation(1); //Initializing necessary for irrigation number 1
     //OpenGarden.calibrateEC(point_1_cond,point_1_cal,point_2_cond,point_2_cal);
     //OpenGarden.calibratepH(calibration_point_4,calibration_point_7,calibration_point_10);
     OpenGarden.initRF();
-    OpenGarden.initIrrigation(1); //Initialize irrigation 1
-    //OpenGarden.initIrrigation(2); //Initialize irrigation 2
-    //OpenGarden.initIrrigation(3); //Initialize irrigation 3
 
     // run an initial date process. Should return:
     // m/d/yyyy - hh:mm:ss European format
@@ -333,7 +283,7 @@ void loop() {
              7 - Electrical conductivity
 
              For example: "0:0:56;0:1:17.54;0:2:56.45"
-             This means that you send data of the gateway: Soil moisture=56, Soil temperature=17.54 and Air humidity=56.45
+             Means that you send data of the gateway: Soil moisture=56, Soil temperature=17.54 and Air humidity=56.45
 
              */
             if ((seconds == 0) || (seconds == 1)) {
@@ -345,8 +295,8 @@ void loop() {
                 updateURL += soilMoisture0;
                 updateURL += ";0:2:";
                 updateURL += airHumidity0;
-                //updateURL += ";0:3:";           // NC
-                //updateURL += airTemperature0;
+                updateURL += ";0:3:";
+                updateURL += airTemperature0;
                 updateURL += ";0:4:";
                 updateURL += luminosity0;
                 updateURL += ";1:0:";
@@ -402,11 +352,11 @@ void loop() {
                 DEBUG_PRINT("Relay setup Received:");
                 DEBUG_PRINTLN(recv);
 
-                DEBUG_PRINT("irrigation1:");
+                DEBUG_PRINT("Irrigation 1: ");
                 DEBUG_PRINTLN(recv[5]);
-                DEBUG_PRINT("irrigation2:");
+                DEBUG_PRINT("Irrigation 2: ");
                 DEBUG_PRINTLN(recv[6]);
-                DEBUG_PRINT("irrigation3:");
+                DEBUG_PRINT("Irrigation 3: ");
                 DEBUG_PRINTLN(recv[7]);
 
                 DEBUG_PRINTLN();
@@ -422,39 +372,63 @@ void loop() {
                 */
 
                 // NOTE:  48 in ASCII it's 0 & 49 it's 1, we don't have enough memory to allocate another string
-                // Turn On Irrigation 1 for a minute at 9.30 PM every days when check of soil moisture falls under value: 430 or if Actuator 1 is On
-                if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && ((hours==6) && (minutes>10) && (minutes<13))) || (recv[5] == 49)) {
-
-                // Turn On Irrigation 1 for a minute every Monday, Wednesday and Saturday or if Actuator 1 is On
-                //if (((hours==23) && (minutes==0) && ((dayOfWeek = "Mon") || (dayOfWeek = "Wed") || (dayOfWeek = "Sat"))) || (recv[5] == 49)) {
-
-                // Turn On Irrigation 1 for a minute every days or if Actuator 1 is On
-                //if (((hours==6) && (minutes==0)) || (recv[5] == 49)) {
-
-                // Turn On Irrigation 1 if Actuator 1 is On
+                // Turn On Actuator 1 when is On
                 //if (recv[5] == 49) {
 
-                    DEBUG_PRINT("->Relay.. ");
+                // Turn On Actuator 1 for a minute every week OR if Actuator 1 is On
+                //if (((hours==23) && (minutes==0) && (dayOfWeek = "Sun")) || (recv[5] == 49)) {
+
+                // Turn On Actuator 1 for a minute every week at Sunday when soil moisture falls under value: 430 OR if Actuator 1 is On
+                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && (hours==23) && (minutes==0) && (dayOfWeek = "Sun")) || (recv[5] == 49)) {
+
+                // Turn On Actuator 1 for a minute at 6.00 AM every days when soil moisture falls under value: 430 OR if Actuator 1 is On
+                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && ((hours==6) && (minutes==0))) || (recv[5] == 49)) {
+
+                // Turn On Actuator 1 for 2 minutes at 6.06 AM and 8.05 PM every days OR if Actuator 1 is On
+                //if (((hours==6) && (minutes>5) && (minutes<8)) || ((hours==20) && (minutes>5) && (minutes<8)) || (recv[5] == 49)) {
+
+                // Turn On Actuator 1 for a minute every Monday, Wednesday and Saturday OR if Actuator 1 is On
+                if (((hours==23) && (minutes==0) && ((dayOfWeek = "Mon") || (dayOfWeek = "Wed") || (dayOfWeek = "Sat"))) || (recv[5] == 49)) {
+
+                    DEBUG_PRINT("->Actuator 1 ");
                     OpenGarden.irrigationON(1);
-                    //    OpenGarden.irrigationON(2);
-                    //    OpenGarden.irrigationON(3);
-                    //    digitalWrite(12,HIGH); // irrigationON(4)
-                    //    digitalWrite(13,HIGH); // irrigationON(5)
-                    //    digitalWrite(17,HIGH); // irrigationON(17) on RXLED
-                    DEBUG_PRINT("->ON");
-                    Console.flush();
+                    DEBUG_PRINT("->Open ");
+
                 }
                 else {
-                    DEBUG_PRINT("->Relay.. ");
+                    DEBUG_PRINT("->Actuator 1 ");
                     OpenGarden.irrigationOFF(1);
-                    //    OpenGarden.irrigationOFF(2);
-                    //    OpenGarden.irrigationOFF(3);
-                    //    digitalWrite(12,LOW); // irrigationON(4)
-                    //    digitalWrite(13,LOW); // irrigationON(5)
-                    //    digitalWrite(17,LOW); // irrigationON(17) on RXLED
-                    DEBUG_PRINTLN("->OFF");
+                    DEBUG_PRINTLN("->Close ");
                 }
-                DEBUG_PRINT("->Done");
+
+                //if (recv[6] == 49) {
+                if (((soilMoisture0 < 475 ) && ((hours==22) && (minutes==0))) || (recv[6] == 49)) {
+
+                    DEBUG_PRINT("->Actuator 2 ");
+                    //OpenGarden.irrigationON(2);
+                    biStableValveOPEN(2);
+                    DEBUG_PRINT("->Open ");
+                    delay(10000);   //Wait 10sec
+                    OpenGarden.irrigationOFF(2);
+                    DEBUG_PRINTLN("->Close");
+                }
+                else {
+                     DEBUG_PRINT("->Actuator 2 ");
+                     OpenGarden.irrigationOFF(2);
+                     DEBUG_PRINTLN("->Close ");
+                }
+
+                if (((hours > 1) && (hours < 22)) || (recv[7] == 49)) {
+                    DEBUG_PRINT("->Actuator 3 ");
+                    OpenGarden.irrigationON(3);
+                    DEBUG_PRINTLN("->Open");
+                }
+                else {
+                    DEBUG_PRINT("->Actuator 3 ");
+                    OpenGarden.irrigationOFF(3);
+                    DEBUG_PRINTLN("->Close");
+                }
+                DEBUG_PRINTLN("->Done");
                 Console.flush();
             }
 #ifdef SEND_EMONDATA
@@ -468,8 +442,8 @@ void loop() {
                 updateURL += "&json={";
                 updateURL += "watermoisture0:";
                 updateURL += soilMoisture0;
-                //updateURL += ",airtemperature0:";
-                //updateURL += airTemperature0;
+                updateURL += ",airtemperature0:";
+                updateURL += airTemperature0;
                 updateURL += ",airhumidity0:";
                 updateURL += airHumidity0;
                 updateURL += ",luminosity0:";
@@ -495,7 +469,7 @@ void loop() {
                 DEBUG_PRINT("->Sending data from opengarden node1 for emoncms web app...");
 
                 // We now create a URI for the request
-                updateURL = "http://tempo.briata.org";
+                updateURL = "http://my.emoncms.org";
                 updateURL += "/input/post.json?node=1";
                 updateURL += "&apikey=fffffffffffffffffffffffffffff";
                 updateURL += "&json={";
@@ -537,4 +511,55 @@ void loop() {
     //delay(5000);   //Wait 5 seconds
     DEBUG_PRINT("->Set new date and time");
     Console.flush();
+}
+
+
+void getDateTime() {
+    if (!date.running()) {
+        date.begin("date");
+        date.addParameter("+%d/%m/%Y-%a-%T");
+        date.run();
+    }
+}
+
+void setDateTime() {
+    //if there's a result from the date process, parse it:
+    while (date.available() > 0) {
+
+        // get the result of the date process (should be hh:mm:ss):
+        String timeString = date.readString();
+        timeString.trim();
+
+        // find the slashes /
+        int firstSlash = timeString.indexOf("/");
+        int secondSlash = timeString.lastIndexOf("/");
+
+        // find the dashes -
+        int firstDash = timeString.indexOf("-");
+        int secondDash = timeString.lastIndexOf("-");
+
+        // find the colons:
+        int firstColon = timeString.indexOf(":");
+        int secondColon = timeString.lastIndexOf(":");
+
+        // get the substrings for date and time
+        String dayString = timeString.substring(0, firstSlash);
+        String monthString = timeString.substring(firstSlash + 1, secondSlash);
+        String yearString = timeString.substring(secondSlash + 1, firstDash);
+        dayOfWeek = timeString.substring(firstDash + 1, secondDash);
+        String hourString = timeString.substring(secondDash + 1, firstColon);
+        String minString = timeString.substring(firstColon + 1, secondColon);
+        String secString = timeString.substring(secondColon + 1);
+
+        // convert to ints
+        days = dayString.toInt();
+        months = monthString.toInt();
+        years = yearString.toInt();
+        hours = hourString.toInt();
+        minutes = minString.toInt();
+
+        // saving the previous seconds to do a time comparison
+        lastSecond = seconds;
+        seconds = secString.toInt();
+    }
 }
