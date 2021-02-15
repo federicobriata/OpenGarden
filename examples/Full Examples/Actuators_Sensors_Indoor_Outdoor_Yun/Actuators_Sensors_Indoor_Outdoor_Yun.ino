@@ -14,12 +14,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see http://www.gnu.org/licenses/.
  *
- *  Version:           3.1
+ *  Version:           3.2
  *  Implementation:    Federico Pietro Briata, Torino June 2019
  *
  *  The original time parser code come from TimeCheck example of Tom Igoe but the code was taken from ebolisa (TIA) that added a
  *  parser also for get the date https://forum.arduino.cc/index.php?topic=366614.msg2527019#msg2527019
  *  The logic of main loop is inspired on "Sensors Indoor and Outdoor" example from Victor Boria, Luis Martin & Jorge Casanova (Cooking-hacks).
+ *
+ *  About Bistable Valve connection use two relays for Straight and Reverse Polarity
+ *  Bistable valves have ground in common and use other two relays for control each Bistable Valves
+ *  See https://www.logicaprogrammabile.it/come-pilotare-elettrovalvola-bistabile-usando-2-rele/amp/
  *  
  *  Pinout
  *  ARDUINO UNO          ||     Open Garden  Shield     ||     ARDUINO Yún/YúnShield
@@ -32,10 +36,10 @@
  *  PIN3                           RF Power Strip Data In/Out    Not tested
  *  PIN4                           DHT22 Data In                 PIN4
  *  PIN5                           DS18B20 Data In               Not tested
- *  PIN6                           Irrigation 1(PWM)             PIN6
- *  PIN7                           Irrigation 2                  PIN7
+ *  PIN6                           Actuator 1(PWM)               PIN6
+ *  PIN7                           Actuator 1                    PIN7
  *  PIN8                           Vcc Sensors                   PIN8
- *  PIN9                           Irrigation 3(PWM)             PIN9
+ *  PIN9                           Actuator 3(PWM)               PIN9
  *  PIN10                          RF Transceiver (SPI-SS)       PIN10
  *  Not exist                      Free                          PIN11
  *  Not exist                      Free                          PIN12/ANALOG11
@@ -43,7 +47,7 @@
  *  PIN11                          RF Transceiver (SPI-SDI)      PIN16/ICSP-4
  *  PIN12                          RF Transceiver (SPI-SDO)      PIN14/ICSP-1
  *  PIN13                          RF Transceiver (SPI-SCK)      PIN15/ICSP-3
- *  Not exist                      Irrigation 4                  PIN17/RXLED
+ *  Not exist                      Free                          PIN17/RXLED
  *  
  *  Analog Strip
  *  -----------
@@ -53,8 +57,8 @@
  *  ANALOG3                        LDR sensor                    ANALOG3
  *  ANALOG4                        RTC (I2C-SDA)                 Not usable
  *  ANALOG5                        RTC (I2C-SCL)                 Not usable
- *  Not exist                      Free                          ANALOG4/PIN22
- *  Not exist                      Free                          ANALOG5/PIN23
+ *  Not exist                      Actuator 2                    ANALOG4/PIN22
+ *  Not exist                      Actuator 2                    ANALOG5/PIN23
  */
 
 #include <Process.h>
@@ -82,6 +86,8 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
+//int SWITCH_VALVE   =     0;                   // Keep memory of the Valve that need to turn OFF
+
 Process date;                 // process used to get the datetime
 String dayOfWeek;
 int days, months, years, hours, minutes, seconds;  // for the results
@@ -102,9 +108,15 @@ HttpClient www;
 String updateURL;
 
 void setup() {
-    OpenGarden.initIrrigation(1); //Initialize irrigation 1
-    OpenGarden.initIrrigation(2); //Initialize irrigation 2
-    OpenGarden.initIrrigation(3); //Initialize irrigation 3
+    pinMode(6, OUTPUT);           //Initialize pin for DEV+
+    digitalWrite(6, LOW);
+    pinMode(7, OUTPUT);           //Initialize pin for DEV-
+    digitalWrite(7, LOW);
+    pinMode(22, OUTPUT);          //Initialize pin for EV-1
+    digitalWrite(22, LOW);
+    pinMode(23, OUTPUT);          //Initialize pin for EV-2
+    digitalWrite(23, LOW);
+    OpenGarden.initIrrigation(3); //Initialize Actuator 3
 
     pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
@@ -183,7 +195,7 @@ void loop() {
         DEBUG_PRINTLN(seconds);
 #endif
         //Only enter 1 time each minute (Yun, with this setup and debug enabled, take ~1.5s maximum to back here)
-        if (((seconds == 0) || (seconds == 1)) || ((seconds == 15) || (seconds == 16)) || ((seconds == 30) || (seconds == 31)) || ((seconds == 45) || (seconds == 46))) {
+        if (((seconds == 0) || (seconds == 1)) || ((seconds == 15) || (seconds == 16)) || ((seconds == 40) || (seconds == 41)) || ((seconds == 55) || (seconds == 56))) {
 
             //Receive data from nodes
             OpenGarden.receiveFromNode();
@@ -353,11 +365,11 @@ void loop() {
                 DEBUG_PRINT("Relay setup Received:");
                 DEBUG_PRINTLN(recv);
 
-                DEBUG_PRINT("Irrigation 1: ");
+                DEBUG_PRINT("Actuator 1: ");
                 DEBUG_PRINTLN(recv[5]);
-                DEBUG_PRINT("Irrigation 2: ");
+                DEBUG_PRINT("Actuator 2: ");
                 DEBUG_PRINTLN(recv[6]);
-                DEBUG_PRINT("Irrigation 3: ");
+                DEBUG_PRINT("Actuator 3: ");
                 DEBUG_PRINTLN(recv[7]);
 
                 DEBUG_PRINTLN();
@@ -391,41 +403,58 @@ void loop() {
                 // Turn On Actuator 1 for a minute every Monday, Wednesday and Saturday OR if Actuator 1 is On
                 if (((hours==23) && (minutes==0) && ((dayOfWeek = "Mon") || (dayOfWeek = "Wed") || (dayOfWeek = "Sat"))) || (recv[5] == 49)) {
 
-                    DEBUG_PRINT("->Actuator 1 ");
-                    OpenGarden.irrigationON(1);
-                    DEBUG_PRINT("->Open ");
+                    DEBUG_PRINT("Actuator 1 ");
+                    valvePwrON(1);
+                    valvePolarity(0);
+                    DEBUG_PRINTLN("->Open ");
+                    //SWITCH_VALVE = 1;
+                    delay(180000);   //Wait 3Min
+                    valvePolarity(1);
+                    valvePwrOFF();
+                    DEBUG_PRINTLN("->Close ");
 
                 }
-                else {
-                    DEBUG_PRINT("->Actuator 1 ");
-                    OpenGarden.irrigationOFF(1);
-                    DEBUG_PRINTLN("->Close ");
-                }
+                //else {
+                      //if(SWITCH_VALVE == 1) {
+                          //DEBUG_PRINT("Actuator 1 ");
+                          //valvePolarity(1);
+                          //valvePwrOFF();
+                          //DEBUG_PRINTLN("->Close ");
+                          //SWITCH_VALVE = 0;
+                      //}
+                //}
 
                 //if (recv[6] == 49) {
                 if (((soilMoisture0 < 475 ) && ((hours==22) && (minutes==0))) || (recv[6] == 49)) {
 
-                    DEBUG_PRINT("->Actuator 2 ");
-                    //OpenGarden.irrigationON(2);
-                    biStableValveOPEN(2);
-                    DEBUG_PRINT("->Open ");
-                    delay(10000);   //Wait 10sec
-                    OpenGarden.irrigationOFF(2);
-                    DEBUG_PRINTLN("->Close");
+                    DEBUG_PRINT("Actuator 2 ");
+                    valvePwrON(2);
+                    valvePolarity(0);
+                    DEBUG_PRINTLN("->Open ");
+                    //SWITCH_VALVE = 2;
+                    delay(10000);   //Wait 10sec/1lt
+                    valvePolarity(1);
+                    valvePwrOFF();
+                    DEBUG_PRINTLN("->Close ");
+
                 }
-                else {
-                     DEBUG_PRINT("->Actuator 2 ");
-                     OpenGarden.irrigationOFF(2);
-                     DEBUG_PRINTLN("->Close ");
-                }
+                //else {
+                      //if(SWITCH_VALVE == 2) {
+                          //DEBUG_PRINT("Actuator 2 ");
+                          //valvePolarity(1);
+                          //valvePwrOFF();
+                          //DEBUG_PRINTLN("->Close ");
+                          //SWITCH_VALVE = 0;
+                      //}
+                //}
 
                 if (((hours > 1) && (hours < 22)) || (recv[7] == 49)) {
-                    DEBUG_PRINT("->Actuator 3 ");
+                    DEBUG_PRINT("Actuator 3 ");
                     OpenGarden.irrigationON(3);
                     DEBUG_PRINTLN("->Open");
                 }
                 else {
-                    DEBUG_PRINT("->Actuator 3 ");
+                    DEBUG_PRINT("Actuator 3 ");
                     OpenGarden.irrigationOFF(3);
                     DEBUG_PRINTLN("->Close");
                 }
@@ -433,7 +462,7 @@ void loop() {
                 Console.flush();
             }
 #ifdef SEND_EMONDATA
-            else if ((seconds == 30) || (seconds == 31)) {
+            else if ((seconds == 40) || (seconds == 41)) {
                 DEBUG_PRINT("->Sending data from opengarden gateway for emoncms web app...");
 
                 // We now create a URI for the request
@@ -466,7 +495,7 @@ void loop() {
                 DEBUG_PRINTLN("closing HTTP connection");
                 DEBUG_PRINT("->Done");
             }
-            else if ((seconds == 45) || (seconds == 46)) {
+            else if ((seconds == 55) || (seconds == 56)) {
                 DEBUG_PRINT("->Sending data from opengarden node1 for emoncms web app...");
 
                 // We now create a URI for the request
@@ -563,4 +592,45 @@ void setDateTime() {
         lastSecond = seconds;
         seconds = secString.toInt();
     }
+}
+
+//Solenoid ON
+void valvePwrON(int out) {
+  if (out == 1) {           //Turn ON by closing the circuit of Valve 1
+    digitalWrite(22, HIGH);
+    digitalWrite(23, LOW);  // (1 - 0)
+    delay(50);              // Wait 50msec
+  }
+  if (out == 2) {           // Turn ON by closing the circuit of Valve 2
+    digitalWrite(22, LOW);
+    digitalWrite(23, HIGH); // (0 - 1)
+    delay(50);              // Wait 50msec
+  }
+}
+
+//Solenoid OFF
+void valvePwrOFF() {        // Turn OFF All Valves by opening the circuit
+  digitalWrite(22, LOW);
+  digitalWrite(23, LOW);    // (0 - 0) 
+  delay(50);                // Wait 50msec
+}
+
+//Solenoid Polarity  NOTE: This function it's needed only for Bistable Valve, so not needed for Monostable Valve
+void valvePolarity(int out) {
+  if (out == 0) {           // Straight Polarity
+    digitalWrite(6, LOW);
+    digitalWrite(7, HIGH);  // Opening (0 - 1) 
+    delay(50);              // Wait 50msec
+    digitalWrite(6, HIGH);
+    digitalWrite(7, HIGH);  // OFFH, Open (1 - 1) 
+    delay(50);              // Wait 50msec
+    digitalWrite(6, HIGH);
+    digitalWrite(7, LOW);   // Closing (1 - 0) 
+    delay(50);              // Wait 50msec
+  }
+  if (out == 1) {           // Reverse Polarity
+    digitalWrite(6, LOW);
+    digitalWrite(7, LOW);   // OFFL, Closed (0 - 0) 
+    delay(50);              // Wait 50msec
+  }
 }
