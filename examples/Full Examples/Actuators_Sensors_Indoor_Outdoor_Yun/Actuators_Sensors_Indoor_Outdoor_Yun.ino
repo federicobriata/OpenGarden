@@ -86,7 +86,7 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
-//int SWITCH_VALVE   =     0;                   // Keep memory of the Valve that need to turn OFF
+int SWITCH_VALVE   =     0;                     // Keep memory of the Valve that need to turn OFF
 
 Process date;                 // process used to get the datetime
 String dayOfWeek;
@@ -407,22 +407,22 @@ void loop() {
                     valvePwrON(1);
                     valvePolarity(0);
                     DEBUG_PRINTLN("->Open ");
-                    //SWITCH_VALVE = 1;
-                    delay(180000);   //Wait 3Min
-                    valvePolarity(1);
-                    valvePwrOFF();
-                    DEBUG_PRINTLN("->Close ");
+                    SWITCH_VALVE = 1;
+                    //delay(180000);   //Wait 3Min
+                    //valvePolarity(1);
+                    //valvePwrOFF();
+                    //DEBUG_PRINTLN("->Close ");
 
                 }
-                //else {
-                      //if(SWITCH_VALVE == 1) {
-                          //DEBUG_PRINT("Actuator 1 ");
-                          //valvePolarity(1);
-                          //valvePwrOFF();
-                          //DEBUG_PRINTLN("->Close ");
-                          //SWITCH_VALVE = 0;
-                      //}
-                //}
+                else {
+                      if(SWITCH_VALVE == 1) {
+                          DEBUG_PRINT("Actuator 1 ");
+                          valvePolarity(1);
+                          valvePwrOFF();
+                          DEBUG_PRINTLN("->Close ");
+                          SWITCH_VALVE = 0;
+                      }
+                }
 
                 //if (recv[6] == 49) {
                 if (((soilMoisture0 < 475 ) && ((hours==22) && (minutes==0))) || (recv[6] == 49)) {
