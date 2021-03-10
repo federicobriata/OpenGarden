@@ -397,11 +397,14 @@ void loop() {
                 // Turn On Actuator 1 for a minute at 6.00 AM every days when soil moisture falls under value: 430 OR if Actuator 1 is On
                 //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && ((hours==6) && (minutes==0))) || (recv[5] == 49)) {
 
+                // Turn On Actuator 1 for 3 minutes at 11.06 PM every Wednesday and Sunday OR if Actuator 1 is On
+                //if (((hours==23) && (minutes>5) && (minutes<9)) && ((strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == 49)) {
+
+                // Turn On Actuator 1 for 2 minutes every Monday, Wednesday and Saturday OR if Actuator 1 is On
+                if (((hours==23) && (minutes>5) && (minutes<8)) && ((strcmp(dayOfWeek, "Mon") == 0) || (strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sat") == 0)) || (recv[5] == 49)) {
+
                 // Turn On Actuator 1 for 2 minutes at 6.06 AM and 8.05 PM every days OR if Actuator 1 is On
                 //if (((hours==6) && (minutes>5) && (minutes<8)) || ((hours==20) && (minutes>5) && (minutes<8)) || (recv[5] == 49)) {
-
-                // Turn On Actuator 1 for a minute every Monday, Wednesday and Saturday OR if Actuator 1 is On
-                if (((hours==23) && (minutes==0)) && ((strcmp(dayOfWeek, "Mon") == 0) || (strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sat") == 0)) || (recv[5] == 49)) {
 
                     DEBUG_PRINT("Actuator 1 ");
                     valvePwrON(1);
