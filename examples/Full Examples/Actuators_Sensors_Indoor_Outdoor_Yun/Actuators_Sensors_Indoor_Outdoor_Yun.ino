@@ -89,7 +89,7 @@
 int SWITCH_VALVE   =     0;                     // Keep memory of the Valve that need to turn OFF
 
 Process date;                 // process used to get the datetime
-String dayOfWeek;
+char dayOfWeek[4];
 int days, months, years, hours, minutes, seconds;  // for the results
 int lastSecond = -1;          // need an impossible value for comparison
 
@@ -389,10 +389,10 @@ void loop() {
                 //if (recv[5] == 49) {
 
                 // Turn On Actuator 1 for a minute every week OR if Actuator 1 is On
-                //if (((hours==23) && (minutes==0) && (dayOfWeek = "Sun")) || (recv[5] == 49)) {
+                //if (((hours==23) && (minutes==0) && (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == 49)) {
 
                 // Turn On Actuator 1 for a minute every week at Sunday when soil moisture falls under value: 430 OR if Actuator 1 is On
-                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && (hours==23) && (minutes==0) && (dayOfWeek = "Sun")) || (recv[5] == 49)) {
+                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && (hours==23) && (minutes==0) && (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == 49)) {
 
                 // Turn On Actuator 1 for a minute at 6.00 AM every days when soil moisture falls under value: 430 OR if Actuator 1 is On
                 //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && ((hours==6) && (minutes==0))) || (recv[5] == 49)) {
@@ -401,7 +401,7 @@ void loop() {
                 //if (((hours==6) && (minutes>5) && (minutes<8)) || ((hours==20) && (minutes>5) && (minutes<8)) || (recv[5] == 49)) {
 
                 // Turn On Actuator 1 for a minute every Monday, Wednesday and Saturday OR if Actuator 1 is On
-                if (((hours==23) && (minutes==0) && ((dayOfWeek = "Mon") || (dayOfWeek = "Wed") || (dayOfWeek = "Sat"))) || (recv[5] == 49)) {
+                if (((hours==23) && (minutes==0)) && ((strcmp(dayOfWeek, "Mon") == 0) || (strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sat") == 0)) || (recv[5] == 49)) {
 
                     DEBUG_PRINT("Actuator 1 ");
                     valvePwrON(1);
@@ -576,7 +576,7 @@ void setDateTime() {
         String dayString = timeString.substring(0, firstSlash);
         String monthString = timeString.substring(firstSlash + 1, secondSlash);
         String yearString = timeString.substring(secondSlash + 1, firstDash);
-        dayOfWeek = timeString.substring(firstDash + 1, secondDash);
+        String dayOfWeekString = timeString.substring(firstDash + 1, secondDash);
         String hourString = timeString.substring(secondDash + 1, firstColon);
         String minString = timeString.substring(firstColon + 1, secondColon);
         String secString = timeString.substring(secondColon + 1);
@@ -585,6 +585,7 @@ void setDateTime() {
         days = dayString.toInt();
         months = monthString.toInt();
         years = yearString.toInt();
+        dayOfWeekString.toCharArray(dayOfWeek,4);
         hours = hourString.toInt();
         minutes = minString.toInt();
 
