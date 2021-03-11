@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see http://www.gnu.org/licenses/.
  *
- *  Version:           3.2
+ *  Version:           3.3
  *  Implementation:    Federico Pietro Briata, Torino June 2019
  *
  *  The original time parser code come from TimeCheck example of Tom Igoe but the code was taken from ebolisa (TIA) that added a
@@ -384,27 +384,26 @@ void loop() {
                  *  those value migth be different on different setup and enviroment
                 */
 
-                // NOTE:  48 in ASCII it's 0 & 49 it's 1, we don't have enough memory to allocate another string
                 // Turn On Actuator 1 when is On
-                //if (recv[5] == 49) {
+                //if (recv[5] == '1') {
 
-                // Turn On Actuator 1 for a minute every week OR if Actuator 1 is On
-                //if (((hours==23) && (minutes==0) && (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == 49)) {
+                // Turn On Actuator 1 for a minute every week at Sunday OR if Actuator 1 is On
+                //if (((hours==23) && (minutes==0) && (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == '1')) {
 
                 // Turn On Actuator 1 for a minute every week at Sunday when soil moisture falls under value: 430 OR if Actuator 1 is On
-                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && (hours==23) && (minutes==0) && (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == 49)) {
+                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && (hours==23) && (minutes==0) && (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == '1')) {
 
                 // Turn On Actuator 1 for a minute at 6.00 AM every days when soil moisture falls under value: 430 OR if Actuator 1 is On
-                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && ((hours==6) && (minutes==0))) || (recv[5] == 49)) {
+                //if (((soilMoisture1 != 0) && (soilMoisture1 < 430 ) && ((hours==6) && (minutes==0))) || (recv[5] == '1')) {
 
                 // Turn On Actuator 1 for 3 minutes at 11.06 PM every Wednesday and Sunday OR if Actuator 1 is On
-                //if (((hours==23) && (minutes>5) && (minutes<9)) && ((strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == 49)) {
+                //if (((hours==23) && (minutes>5) && (minutes<9)) && ((strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sun") == 0)) || (recv[5] == '1')) {
 
                 // Turn On Actuator 1 for 2 minutes every Monday, Wednesday and Saturday OR if Actuator 1 is On
-                if (((hours==23) && (minutes>5) && (minutes<8)) && ((strcmp(dayOfWeek, "Mon") == 0) || (strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sat") == 0)) || (recv[5] == 49)) {
+                if (((hours==23) && (minutes>5) && (minutes<8)) && ((strcmp(dayOfWeek, "Mon") == 0) || (strcmp(dayOfWeek, "Wed") == 0) || (strcmp(dayOfWeek, "Sat") == 0)) || (recv[5] == '1')) {
 
                 // Turn On Actuator 1 for 2 minutes at 6.06 AM and 8.05 PM every days OR if Actuator 1 is On
-                //if (((hours==6) && (minutes>5) && (minutes<8)) || ((hours==20) && (minutes>5) && (minutes<8)) || (recv[5] == 49)) {
+                //if (((hours==6) && (minutes>5) && (minutes<8)) || ((hours==20) && (minutes>5) && (minutes<8)) || (recv[5] == '1')) {
 
                     DEBUG_PRINT("Actuator 1 ");
                     valvePwrON(1);
@@ -428,7 +427,7 @@ void loop() {
                 }
 
                 //if (recv[6] == 49) {
-                if (((soilMoisture0 < 475 ) && ((hours==22) && (minutes==0))) || (recv[6] == 49)) {
+                if (((soilMoisture0 < 475 ) && ((hours==22) && (minutes==0))) || (recv[6] == '1')) {
 
                     DEBUG_PRINT("Actuator 2 ");
                     valvePwrON(2);
@@ -451,7 +450,7 @@ void loop() {
                       //}
                 //}
 
-                if (((hours > 1) && (hours < 22)) || (recv[7] == 49)) {
+                if (((hours > 1) && (hours < 22)) || (recv[7] == '1')) {
                     DEBUG_PRINT("Actuator 3 ");
                     OpenGarden.irrigationON(3);
                     DEBUG_PRINTLN("->Open");
