@@ -410,11 +410,6 @@ void loop() {
                     valvePolarity(0);
                     DEBUG_PRINTLN("->Open ");
                     SWITCH_VALVE = 1;
-                    //delay(180000);   //Wait 3Min
-                    //valvePolarity(1);
-                    //valvePwrOFF();
-                    //DEBUG_PRINTLN("->Close ");
-
                 }
                 else {
                       if(SWITCH_VALVE == 1) {
@@ -426,7 +421,7 @@ void loop() {
                       }
                 }
 
-                //if (recv[6] == 49) {
+                //if (recv[6] == '1') {
                 if (((soilMoisture0 < 475 ) && ((hours==22) && (minutes==0))) || (recv[6] == '1')) {
 
                     DEBUG_PRINT("Actuator 2 ");
@@ -440,7 +435,7 @@ void loop() {
                     DEBUG_PRINTLN("->Close ");
 
                 }
-                //else {
+                //else {            //Use this instead delay, when time to wait it's more than a minute
                       //if(SWITCH_VALVE == 2) {
                           //DEBUG_PRINT("Actuator 2 ");
                           //valvePolarity(1);
@@ -602,12 +597,12 @@ void valvePwrON(int out) {
   if (out == 1) {           //Turn ON by closing the circuit of Valve 1
     digitalWrite(22, HIGH);
     digitalWrite(23, LOW);  // (1 - 0)
-    delay(50);              // Wait 50msec
+    //delay(50);              // Wait 50msec
   }
   if (out == 2) {           // Turn ON by closing the circuit of Valve 2
     digitalWrite(22, LOW);
     digitalWrite(23, HIGH); // (0 - 1)
-    delay(50);              // Wait 50msec
+    //delay(50);              // Wait 50msec
   }
 }
 
@@ -615,7 +610,7 @@ void valvePwrON(int out) {
 void valvePwrOFF() {        // Turn OFF All Valves by opening the circuit
   digitalWrite(22, LOW);
   digitalWrite(23, LOW);    // (0 - 0) 
-  delay(50);                // Wait 50msec
+  //delay(50);                // Wait 50msec
 }
 
 //Solenoid Polarity  NOTE: This function it's needed only for Bistable Valve, so not needed for Monostable Valve
@@ -627,11 +622,14 @@ void valvePolarity(int out) {
     digitalWrite(6, HIGH);
     digitalWrite(7, HIGH);  // OFFH, Open (1 - 1) 
     delay(50);              // Wait 50msec
+    //digitalWrite(6, HIGH);   // Uncomment this for safe closing when you are not under UPS. In this case, the reverse polarity block below have to be commented!
+    //digitalWrite(7, LOW);   // Closing (1 - 0) 
+    //delay(50);              // Wait 50msec
+  }
+  if (out == 1) {           // Reverse Polarity
     digitalWrite(6, HIGH);
     digitalWrite(7, LOW);   // Closing (1 - 0) 
     delay(50);              // Wait 50msec
-  }
-  if (out == 1) {           // Reverse Polarity
     digitalWrite(6, LOW);
     digitalWrite(7, LOW);   // OFFL, Closed (0 - 0) 
     delay(50);              // Wait 50msec
