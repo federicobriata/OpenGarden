@@ -130,7 +130,6 @@ void setup() {
     DEBUG_PRINTLN("Console OK");
 
     OpenGarden.initSensors();     //Initialize sensors power
-    OpenGarden.sensorPowerON();   //Turn On the sensors
     //OpenGarden.calibrateEC(point_1_cond,point_1_cal,point_2_cond,point_2_cal);
     //OpenGarden.calibratepH(calibration_point_4,calibration_point_7,calibration_point_10);
     OpenGarden.initRF();
@@ -197,6 +196,9 @@ void loop() {
         //Only enter 1 time each minute (Yun, with this setup and debug enabled, take ~1.5s maximum to back here)
         if (((seconds == 0) || (seconds == 1)) || ((seconds == 15) || (seconds == 16)) || ((seconds == 40) || (seconds == 41)) || ((seconds == 55) || (seconds == 56))) {
 
+            //Turn On the sensors
+            OpenGarden.sensorPowerON();
+
             //Receive data from nodes
             OpenGarden.receiveFromNode();
 
@@ -215,6 +217,9 @@ void loop() {
             //float EC = OpenGarden.ECConversion(resistanceEC); //EC Value in µS/cm
             //int mvpH = OpenGarden.readpH(); //Value in mV of pH
             //float pH = OpenGarden.pHConversion(mvpH); //Calculate pH value
+
+            //Turns off the sensor power supply
+            OpenGarden.sensorPowerOFF();
 
             //Get the last data received from node1
             Payload node1Packet = OpenGarden.getNodeData(node1);
