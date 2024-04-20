@@ -1,5 +1,5 @@
 /*
- *  OpenGarden sensor platform for Arduino Yún/YúnShield.
+ *  OpenGarden sensor platform for Dragino YúnShield and Seeeduino Cloud Yún.
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,7 +76,6 @@
 #include <Console.h>
 //#include <Bridge.h>
 #include <OpenGarden.h>
-#include <HttpClient.h>
 
 #include <Wire.h>
 #include <Adafruit_MCP23017.h>
@@ -100,6 +99,9 @@ Adafruit_MCP23017 mcp;
   #define DEBUG_PRINTLN(x)
 #endif
 
+//If you use Dragino Mesh Firmware , uncomment below lines.
+//#define BAUDRATE 250000
+
 bool SWITCH_VALVE1   =     0;                     // Keep memory of the Valve 1 that need to turn OFF
 bool SWITCH_VALVE2   =     0;                     // Keep memory of the Valve 2 that need to turn OFF
 
@@ -118,9 +120,6 @@ int lastSecond = -1;          // need an impossible value for comparison
 //#define calibration_point_4 2246 //Write here your measured value in mV of pH 4
 //#define calibration_point_7 2080 //Write here your measured value in mV of pH 7
 //#define calibration_point_10 1894 //Write here your measured value in mV of pH 10
-
-HttpClient www;
-String updateURL;
 
 void setup() {
 
@@ -145,6 +144,7 @@ void setup() {
     pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
     Bridge.begin();    // Bridge takes about two seconds to start up
+    //Bridge.begin(BAUDRATE);
 #ifdef DEBUG_MODE
     Console.begin();
     //Console.begin(115200);
@@ -219,6 +219,8 @@ void loop() {
 #endif
         //Only enter 1 time each minute (Yun, with this setup and debug enabled, take ~1.5s maximum to back here)
         if (((seconds == 0) || (seconds == 1)) || ((seconds == 15) || (seconds == 16)) || ((seconds == 40) || (seconds == 41)) || ((seconds == 55) || (seconds == 56))) {
+
+            String updateURL;
 
             //Turn On the sensors
             OpenGarden.sensorPowerON();
@@ -353,15 +355,9 @@ void loop() {
                 updateURL += battery1;
 
                 DEBUG_PRINTLN(updateURL);
-                www.get(updateURL);
-                DEBUG_PRINTLN("Status update sent");
-                while (www.available()>0) {
-                    char c = www.read();
-                    DEBUG_PRINT(c);
-                }
+                sendData(updateURL);
                 Console.flush();
                 updateURL ="";
-                www.close();
 
                 DEBUG_PRINTLN();
                 DEBUG_PRINTLN("closing HTTP connection");
@@ -375,17 +371,11 @@ void loop() {
                 updateURL += "/get_actuators.php?actuators";
 
                 DEBUG_PRINTLN(updateURL);
-                www.get(updateURL);
-
                 // Read incoming bytes from the server
-                int cont=0;
                 char recv[9] = {'0', '0', '0', '0', '0', '0', '0', '0', '0'};
-                while ((www.available()>0) && (cont<=9)) {
-                    recv[cont] = www.read();
-                    cont++;
-                }
+                gethexData(updateURL, recv);
+                DEBUG_PRINTLN("Status update sent");
                 updateURL ="";
-                www.close();
                 DEBUG_PRINTLN();
 
                 DEBUG_PRINTLN("closing HTTP connection");
@@ -523,15 +513,9 @@ void loop() {
                 updateURL += "}";
 
                 DEBUG_PRINTLN(updateURL);
-                www.get(updateURL);
-                DEBUG_PRINTLN("Status update sent");
-                while (www.available()>0) {
-                    char c = www.read();
-                    DEBUG_PRINT(c);
-                }
+                sendData(updateURL);
                 Console.flush();
                 updateURL ="";
-                www.close();
 
                 DEBUG_PRINTLN();
                 DEBUG_PRINTLN("closing HTTP connection");
@@ -558,15 +542,9 @@ void loop() {
                 updateURL += "}";
 
                 DEBUG_PRINTLN(updateURL);
-                www.get(updateURL);
-                DEBUG_PRINTLN("Status update sent");
-                while (www.available()>0) {
-                    char c = www.read();
-                    DEBUG_PRINT(c);
-                }
+                sendData(updateURL);
                 Console.flush();
                 updateURL ="";
-                www.close();
 
                 DEBUG_PRINTLN();
                 DEBUG_PRINTLN("closing HTTP connection");
@@ -635,6 +613,46 @@ void setDateTime() {
         lastSecond = seconds;
         seconds = secString.toInt();
     }
+}
+
+// makes a HTTP connection to the server
+void sendData(String &url) {
+
+  Process www;
+  DEBUG_PRINT("\n\nSending data... ");
+  www.begin("curl");
+  www.addParameter("-g");
+  www.addParameter(url);
+  www.run();
+  DEBUG_PRINTLN("done!");
+
+  // If there's incoming data from the net connection,
+  // send it out the Console:
+  while (www.available()>0) {
+    char c = www.read();
+    Console.write(c);
+  }
+  www.close();
+}
+
+char * gethexData(String &url, char *out) {
+
+  Process www;
+  DEBUG_PRINT("\n\nSending data... ");
+  www.begin("curl");
+  www.addParameter("-g");
+  www.addParameter(url);
+  www.run();
+  DEBUG_PRINTLN("done!");
+
+  // parsing incoming data and return them in the array
+  int cont=0;
+  while ((www.available()>0) && (cont<=9)) {
+    out[cont] = www.read();
+    cont++;
+  }
+  www.close();
+  return out;
 }
 
 //Solenoid ON
