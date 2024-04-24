@@ -109,16 +109,20 @@ HttpClient www;
 String updateURL;
 
 void setup() {
-    pinMode(6, OUTPUT);           //Initialize pin for DEV+
-    pinMode(7, OUTPUT);           //Initialize pin for DEV-
-    pinMode(22, OUTPUT);          //Initialize pin for EV-1
-    pinMode(23, OUTPUT);          //Initialize pin for EV-2
-    digitalWrite(6, LOW);
-    digitalWrite(7, LOW);
-    digitalWrite(22, LOW);
-    digitalWrite(23, LOW);
+    pinMode(6, OUTPUT);     // Initialize pin for DEV+
+    pinMode(7, OUTPUT);     // Initialize pin for DEV-
+    pinMode(22, OUTPUT);    // Initialize pin for EV-1
+    pinMode(23, OUTPUT);    // Initialize pin for EV-2
+    digitalWrite(6, HIGH);
+    digitalWrite(7, LOW);   // EVs CLOSED
+    digitalWrite(22, HIGH); // EV-1 Connected
+    digitalWrite(23, HIGH); // EV-2 Connected
+    delay(50);              // Wait 50msec
+    digitalWrite(6, LOW);   // OFFL
+    delay(50);              // Wait 50msec
+    digitalWrite(22, LOW);  // EV-1 Disconnected
+    digitalWrite(23, LOW);  // EV-2 Disconnected
     OpenGarden.initIrrigation(3); //Initialize Actuator 3
-
     pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
     Bridge.begin();    // Bridge takes about two seconds to start up
@@ -413,12 +417,14 @@ void loop() {
                     DEBUG_PRINT("Actuator 1 ");
                     valvePwrON(1);
                     valvePolarity(0);
+                    valvePwrOFF(1);
                     DEBUG_PRINTLN("->Open ");
                     SWITCH_VALVE1 = 1;
                 }
                 else {
                       if(SWITCH_VALVE1 == 1) {
                           DEBUG_PRINT("Actuator 1 ");
+                          valvePwrON(1);
                           valvePolarity(1);
                           valvePwrOFF(1);
                           DEBUG_PRINTLN("->Close ");
@@ -432,9 +438,11 @@ void loop() {
                     DEBUG_PRINT("Actuator 2 ");
                     valvePwrON(2);
                     valvePolarity(0);
+                    valvePwrOFF(2);
                     DEBUG_PRINTLN("->Open ");
                     //SWITCH_VALVE2 = 1; //uncomment if else block will be used
                     delay(10000);   //Wait 10sec/1lt
+                    valvePwrON(2);
                     valvePolarity(1);
                     valvePwrOFF(2);
                     DEBUG_PRINTLN("->Close ");
@@ -442,6 +450,7 @@ void loop() {
                 //else {            //when time to wait it's more than a minute you can comment above delay and use the code below
                       //if(SWITCH_VALVE2 == 1) {
                           //DEBUG_PRINT("Actuator 2 ");
+                          //valvePwrON(2);
                           //valvePolarity(1);
                           //valvePwrOFF(2);
                           //DEBUG_PRINTLN("->Close ");
