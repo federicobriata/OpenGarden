@@ -360,8 +360,8 @@ void loop() {
 
                 // Read incoming bytes from the server
                 int cont=0;
-                char recv[8] = {'0', '0', '0', '0', '0', '0', '0', '\0'};
-                while (www.available()>0) {
+                char recv[8] = {'0', '0', '0', '0', '0', '0', '0', '0'};
+                while ((www.available()>0) && (cont<=8)) {
                     recv[cont] = www.read();
                     cont++;
                 }
