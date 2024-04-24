@@ -86,7 +86,8 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
-int SWITCH_VALVE   =     0;                     // Keep memory of the Valve that need to turn OFF
+bool SWITCH_VALVE1   =     0;                     // Keep memory of the Valve 1 that need to turn OFF
+bool SWITCH_VALVE2   =     0;                     // Keep memory of the Valve 2 that need to turn OFF
 
 Process date;                 // process used to get the datetime
 char dayOfWeek[4];
@@ -109,12 +110,12 @@ String updateURL;
 
 void setup() {
     pinMode(6, OUTPUT);           //Initialize pin for DEV+
-    digitalWrite(6, LOW);
     pinMode(7, OUTPUT);           //Initialize pin for DEV-
-    digitalWrite(7, LOW);
     pinMode(22, OUTPUT);          //Initialize pin for EV-1
-    digitalWrite(22, LOW);
     pinMode(23, OUTPUT);          //Initialize pin for EV-2
+    digitalWrite(6, LOW);
+    digitalWrite(7, LOW);
+    digitalWrite(22, LOW);
     digitalWrite(23, LOW);
     OpenGarden.initIrrigation(3); //Initialize Actuator 3
 
@@ -413,15 +414,15 @@ void loop() {
                     valvePwrON(1);
                     valvePolarity(0);
                     DEBUG_PRINTLN("->Open ");
-                    SWITCH_VALVE = 1;
+                    SWITCH_VALVE1 = 1;
                 }
                 else {
-                      if(SWITCH_VALVE == 1) {
+                      if(SWITCH_VALVE1 == 1) {
                           DEBUG_PRINT("Actuator 1 ");
                           valvePolarity(1);
-                          valvePwrOFF();
+                          valvePwrOFF(1);
                           DEBUG_PRINTLN("->Close ");
-                          SWITCH_VALVE = 0;
+                          SWITCH_VALVE1 = 0;
                       }
                 }
 
@@ -432,20 +433,19 @@ void loop() {
                     valvePwrON(2);
                     valvePolarity(0);
                     DEBUG_PRINTLN("->Open ");
-                    //SWITCH_VALVE = 2;
+                    //SWITCH_VALVE2 = 1; //uncomment if else block will be used
                     delay(10000);   //Wait 10sec/1lt
                     valvePolarity(1);
-                    valvePwrOFF();
+                    valvePwrOFF(2);
                     DEBUG_PRINTLN("->Close ");
-
                 }
-                //else {            //Use this instead delay, when time to wait it's more than a minute
-                      //if(SWITCH_VALVE == 2) {
+                //else {            //when time to wait it's more than a minute you can comment above delay and use the code below
+                      //if(SWITCH_VALVE2 == 1) {
                           //DEBUG_PRINT("Actuator 2 ");
                           //valvePolarity(1);
-                          //valvePwrOFF();
+                          //valvePwrOFF(2);
                           //DEBUG_PRINTLN("->Close ");
-                          //SWITCH_VALVE = 0;
+                          //SWITCH_VALVE2 = 0;
                       //}
                 //}
 
@@ -598,44 +598,54 @@ void setDateTime() {
 
 //Solenoid ON
 void valvePwrON(int out) {
-  if (out == 1) {           //Turn ON by closing the circuit of Valve 1
+  if (out == 1) {           // Turn ON by closing the circuit of Valve 1
     digitalWrite(22, HIGH);
-    digitalWrite(23, LOW);  // (1 - 0)
-    //delay(50);              // Wait 50msec
+    DEBUG_PRINT("->OFF 1 (1 - x)");
   }
   if (out == 2) {           // Turn ON by closing the circuit of Valve 2
-    digitalWrite(22, LOW);
-    digitalWrite(23, HIGH); // (0 - 1)
-    //delay(50);              // Wait 50msec
+    digitalWrite(23, HIGH);
+    DEBUG_PRINT("->OFF 1 (x - 1)");
   }
 }
 
 //Solenoid OFF
-void valvePwrOFF() {        // Turn OFF All Valves by opening the circuit
-  digitalWrite(22, LOW);
-  digitalWrite(23, LOW);    // (0 - 0) 
-  //delay(50);                // Wait 50msec
+void valvePwrOFF(int out) {
+  if (out == 1) {             // Turn OFF by closing the circuit of Valve 1
+    digitalWrite(22, LOW);
+    DEBUG_PRINT("->OFF 1 (0 - x)");
+  }
+  if (out == 2) {             // Turn OFF by closing the circuit of Valve 2
+    digitalWrite(23, LOW);
+    DEBUG_PRINT("->OFF 2 (x - 0)");
+  }
 }
 
 //Solenoid Polarity  NOTE: This function it's needed only for Bistable Valve, so not needed for Monostable Valve
 void valvePolarity(int out) {
-  if (out == 0) {           // Straight Polarity
+  if (out == 0) {
+    DEBUG_PRINT("(Straight Polarity)");
     digitalWrite(6, LOW);
-    digitalWrite(7, HIGH);  // Opening (0 - 1) 
+    digitalWrite(7, HIGH);
+    DEBUG_PRINT("->Opening (0 - 1)");
     delay(50);              // Wait 50msec
     digitalWrite(6, HIGH);
-    digitalWrite(7, HIGH);  // OFFH, Open (1 - 1) 
+    digitalWrite(7, HIGH);
+    DEBUG_PRINT("->OFFH (1 - 1)"); // Open
     delay(50);              // Wait 50msec
     //digitalWrite(6, HIGH);   // Uncomment this for safe closing when you are not under UPS. In this case, the reverse polarity block below have to be commented!
-    //digitalWrite(7, LOW);   // Closing (1 - 0) 
+    //digitalWrite(7, LOW);
+    //DEBUG_PRINT("->Closing (1 - 0)");
     //delay(50);              // Wait 50msec
   }
-  if (out == 1) {           // Reverse Polarity
+  if (out == 1) {
+    DEBUG_PRINT("->Reverse Polarity");
     digitalWrite(6, HIGH);
-    digitalWrite(7, LOW);   // Closing (1 - 0) 
+    digitalWrite(7, LOW);
+    DEBUG_PRINT("->Closing (1 - 0)");
     delay(50);              // Wait 50msec
     digitalWrite(6, LOW);
-    digitalWrite(7, LOW);   // OFFL, Closed (0 - 0) 
+    digitalWrite(7, LOW);
+    DEBUG_PRINT("->OFFL (0 - 0)"); // Closed
     delay(50);              // Wait 50msec
   }
 }
