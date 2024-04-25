@@ -117,9 +117,9 @@ void setup() {
     digitalWrite(7, LOW);   // EVs CLOSED
     digitalWrite(22, HIGH); // EV-1 Connected
     digitalWrite(23, HIGH); // EV-2 Connected
-    delay(50);              // Wait 50msec
+    delay(150);              // Wait 150msec
     digitalWrite(6, LOW);   // OFFL
-    delay(50);              // Wait 50msec
+    delay(150);              // Wait 150msec
     digitalWrite(22, LOW);  // EV-1 Disconnected
     digitalWrite(23, LOW);  // EV-2 Disconnected
     OpenGarden.initIrrigation(3); //Initialize Actuator 3
@@ -650,25 +650,25 @@ void valvePolarity(int out) {
     digitalWrite(6, LOW);
     digitalWrite(7, HIGH);
     DEBUG_PRINT("->Opening (0 - 1)");
-    delay(50);              // Wait 50msec
+    delay(150);              // Wait 150msec
     digitalWrite(6, HIGH);
     digitalWrite(7, HIGH);
     DEBUG_PRINT("->OFFH (1 - 1)"); // Open
-    delay(50);              // Wait 50msec
+    delay(150);              // Wait 150msec
     //digitalWrite(6, HIGH);   // Uncomment this for safe closing when you are not under UPS. In this case, the reverse polarity block below have to be commented!
     //digitalWrite(7, LOW);
     //DEBUG_PRINT("->Closing (1 - 0)");
-    //delay(50);              // Wait 50msec
+    //delay(150);              // Wait 150msec
   }
   if (out == 1) {
     DEBUG_PRINT("->Reverse Polarity");
     digitalWrite(6, HIGH);
     digitalWrite(7, LOW);
     DEBUG_PRINT("->Closing (1 - 0)");
-    delay(50);              // Wait 50msec
+    delay(150);              // Wait 150msec
     digitalWrite(6, LOW);
     digitalWrite(7, LOW);
     DEBUG_PRINT("->OFFL (0 - 0)"); // Closed
-    delay(50);              // Wait 50msec
+    delay(150);              // Wait 150msec
   }
 }
