@@ -362,8 +362,12 @@ void loop() {
                 int cont=0;
                 char recv[8] = {'0', '0', '0', '0', '0', '0', '0', '\0'};
                 while (www.available()>0) {
-                    recv[cont] = www.read();
-                    cont++;
+                    if (cont<8) {
+                       recv[cont] = www.read();
+                       cont++;
+                    }
+                    else
+                       www.read();
                 }
                 updateURL ="";
                 www.close();
@@ -374,14 +378,24 @@ void loop() {
                 DEBUG_PRINT("Relay setup Received:");
                 DEBUG_PRINTLN(recv);
 
-                DEBUG_PRINT("Actuator 1: ");
-                DEBUG_PRINTLN(recv[5]);
-                DEBUG_PRINT("Actuator 2: ");
-                DEBUG_PRINTLN(recv[6]);
-                DEBUG_PRINT("Actuator 3: ");
-                DEBUG_PRINTLN(recv[7]);
+                // If header it's wrong we can assume data are corrupted and we reset them to 0.
+                if ((recv[0] != 'A') && (recv[1] != 'C') && (recv[2] != 'T') && (recv[3] != ':') && (recv[4] != ':')) {
+                   DEBUG_PRINTLN("got wrong data, values will be reset!");
+                   DEBUG_PRINTLN();
+                   recv[5] = '0';
+                   recv[6] = '0';
+                   recv[7] = '0';
+                }
+                else {
+                   DEBUG_PRINT("Actuator 1: ");
+                   DEBUG_PRINTLN(recv[5]);
+                   DEBUG_PRINT("Actuator 2: ");
+                   DEBUG_PRINTLN(recv[6]);
+                   DEBUG_PRINT("Actuator 3: ");
+                   DEBUG_PRINTLN(recv[7]);
+                   DEBUG_PRINTLN();
+                }
 
-                DEBUG_PRINTLN();
 
                 /*
                  *  Warter moisture values
