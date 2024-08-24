@@ -14,19 +14,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see http://www.gnu.org/licenses/.
  *
- *  Version:           3.3
+ *  Version:           3.4
  *  Implementation:    Federico Pietro Briata, Torino June 2019
  *
  *  The original time parser code come from TimeCheck example of Tom Igoe but the code was taken from ebolisa (TIA) that added a
  *  parser also for get the date https://forum.arduino.cc/index.php?topic=366614.msg2527019#msg2527019
  *  The logic of main loop is inspired on "Sensors Indoor and Outdoor" example from Victor Boria, Luis Martin & Jorge Casanova (Cooking-hacks).
- *
- *  About Bistable Valve connection use two relays for Straight and Reverse Polarity
- *  Bistable valves have ground in common and use other two relays for control each Bistable Valves
- *  See https://www.logicaprogrammabile.it/come-pilotare-elettrovalvola-bistabile-usando-2-rele/amp/
  *  
  *  Pinout
- *  ARDUINO UNO          ||     Open Garden  Shield     ||     ARDUINO Yún/YúnShield
+ *  ARDUINO UNO R3       ||     Open Garden  Shield     ||     ARDUINO Yún/YúnShield
  *  
  *  Digital Strip
  *  -------------
@@ -36,10 +32,10 @@
  *  PIN3                           RF Power Strip Data In/Out    Not tested
  *  PIN4                           DHT22 Data In                 PIN4
  *  PIN5                           DS18B20 Data In               Not tested
- *  PIN6                           Actuator 1(PWM)               PIN6
- *  PIN7                           Actuator 1                    PIN7
+ *  PIN6                           Irrigation 1(PWM)             PIN6
+ *  PIN7                           Irrigation 2                  PIN7
  *  PIN8                           Vcc Sensors                   PIN8
- *  PIN9                           Actuator 3(PWM)               PIN9
+ *  PIN9                           Vcc EC | Irrigation 3(PWM)    PIN9
  *  PIN10                          RF Transceiver (SPI-SS)       PIN10
  *  Not exist                      Free                          PIN11
  *  Not exist                      Free                          PIN12/ANALOG11
@@ -47,7 +43,6 @@
  *  PIN11                          RF Transceiver (SPI-SDI)      PIN16/ICSP-4
  *  PIN12                          RF Transceiver (SPI-SDO)      PIN14/ICSP-1
  *  PIN13                          RF Transceiver (SPI-SCK)      PIN15/ICSP-3
- *  Not exist                      Free                          PIN17/RXLED
  *  
  *  Analog Strip
  *  -----------
@@ -55,18 +50,37 @@
  *  ANALOG1                        pH sensor                     ANALOG1
  *  ANALOG2                        Soil moisture sensor          ANALOG2
  *  ANALOG3                        LDR sensor                    ANALOG3
- *  ANALOG4                        RTC (I2C-SDA)                 Not usable
- *  ANALOG5                        RTC (I2C-SCL)                 Not usable
- *  Not exist                      Actuator 2                    ANALOG4/PIN22
- *  Not exist                      Actuator 2                    ANALOG5/PIN23
+ *  ANALOG4                        RTC (I2C-SDA)                 Not tested
+ *  ANALOG5                        RTC (I2C-SCL)                 Not tested
+ *  Not exist                      Free                          ANALOG4/PIN22
+ *  Not exist                      Free                          ANALOG5/PIN23
+ *
+ *  4 relays are connected to MCP23017 module for control Two Bistable valves, two for Straight and
+ *  Reverse Polarity and two for close the connection with the vales.
+ *  Bistable valves have ground in common and use other two relays for control each Bistable Valves
+ *  See https://www.logicaprogrammabile.it/come-pilotare-elettrovalvola-bistabile-usando-2-rele/amp/
+ *
+ *  MCP23017 Module
+ *  -----------
+ *  GPA0                           DEV-
+ *  GPA1                           DEV+ (+9v)
+ *  GPA2                           EV-1 (Actuator 1)
+ *  GPA3                           EV-2 (Actuator 2)
+ *  SCL/SCK                        I2C-SCL
+ *  SDA/SI                         I2C-SDA
+ *  VCC                            VCC
+ *  GND                            GND
  */
 
 #include <Process.h>
 #include <Console.h>
 //#include <Bridge.h>
 #include <OpenGarden.h>
-//#include <Wire.h>
 #include <HttpClient.h>
+
+#include <Wire.h>
+#include <Adafruit_MCP23017.h>
+Adafruit_MCP23017 mcp;
 
 //#define DEBUG_MODE
 
@@ -109,20 +123,25 @@ HttpClient www;
 String updateURL;
 
 void setup() {
-    pinMode(6, OUTPUT);     // Initialize pin for DEV+
-    pinMode(7, OUTPUT);     // Initialize pin for DEV-
-    pinMode(22, OUTPUT);    // Initialize pin for EV-1
-    pinMode(23, OUTPUT);    // Initialize pin for EV-2
-    digitalWrite(6, HIGH);
-    digitalWrite(7, LOW);   // EVs CLOSED
-    digitalWrite(22, HIGH); // EV-1 Connected
-    digitalWrite(23, HIGH); // EV-2 Connected
-    delay(150);              // Wait 150msec
-    digitalWrite(6, LOW);   // OFFL
-    delay(150);              // Wait 150msec
-    digitalWrite(22, LOW);  // EV-1 Disconnected
-    digitalWrite(23, LOW);  // EV-2 Disconnected
-    OpenGarden.initIrrigation(3); //Initialize Actuator 3
+
+    OpenGarden.initIrrigation(1); //Initialize Irrigation 1
+    OpenGarden.initIrrigation(2); //Initialize Irrigation 2
+    //OpenGarden.initIrrigation(3); //Initialize Irrigation 3
+
+    mcp.begin();
+    mcp.pinMode(0, OUTPUT);    // Initialize pin for DEV-
+    mcp.pinMode(1, OUTPUT);    // Initialize pin for DEV+
+    mcp.pinMode(2, OUTPUT);    // Initialize pin for EV-1
+    mcp.pinMode(3, OUTPUT);    // Initialize pin for EV-2
+    mcp.digitalWrite(0, HIGH);
+    mcp.digitalWrite(1, LOW);  // EVs CLOSED
+    mcp.digitalWrite(2, HIGH); // EV-1 Connected
+    mcp.digitalWrite(3, HIGH); // EV-2 Connected
+    delay(150);                 // Wait 150msec
+    mcp.digitalWrite(0, LOW);  // OFFL
+    delay(150);                 // Wait 150msec
+    mcp.digitalWrite(2, LOW);  // EV-1 Disconnected
+    mcp.digitalWrite(3, LOW);  // EV-2 Disconnected
     pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
     Bridge.begin();    // Bridge takes about two seconds to start up
@@ -360,9 +379,9 @@ void loop() {
 
                 // Read incoming bytes from the server
                 int cont=0;
-                char recv[8] = {'0', '0', '0', '0', '0', '0', '0', '\0'};
+                char recv[9] = {'0', '0', '0', '0', '0', '0', '0', '0', '\0'};
                 while (www.available()>0) {
-                    if (cont<8) {
+                    if (cont<9) {
                        recv[cont] = www.read();
                        cont++;
                     }
@@ -385,14 +404,17 @@ void loop() {
                    recv[5] = '0';
                    recv[6] = '0';
                    recv[7] = '0';
+                   recv[8] = '0';
                 }
                 else {
                    DEBUG_PRINT("Actuator 1: ");
                    DEBUG_PRINTLN(recv[5]);
                    DEBUG_PRINT("Actuator 2: ");
                    DEBUG_PRINTLN(recv[6]);
-                   DEBUG_PRINT("Actuator 3: ");
+                   DEBUG_PRINT("Irrigation 1: ");
                    DEBUG_PRINTLN(recv[7]);
+                   DEBUG_PRINT("Irrigation 2: ");
+                   DEBUG_PRINTLN(recv[8]);
                    DEBUG_PRINTLN();
                 }
 
@@ -473,13 +495,24 @@ void loop() {
                 //}
 
                 if (((hours > 1) && (hours < 22)) || (recv[7] == '1')) {
-                    DEBUG_PRINT("Actuator 3 ");
-                    OpenGarden.irrigationON(3);
+                    DEBUG_PRINT("Irrigation 1 ");
+                    OpenGarden.irrigationON(1);
                     DEBUG_PRINTLN("->Open");
                 }
                 else {
-                    DEBUG_PRINT("Actuator 3 ");
-                    OpenGarden.irrigationOFF(3);
+                    DEBUG_PRINT("Irrigation 1 ");
+                    OpenGarden.irrigationOFF(1);
+                    DEBUG_PRINTLN("->Close");
+                }
+
+                if ((airTemperature0 > 25) || (recv[8] == '1')) {
+                    DEBUG_PRINT("Irrigation 2 ");
+                    OpenGarden.irrigationON(2);
+                    DEBUG_PRINTLN("->Open");
+                }
+                else {
+                    DEBUG_PRINT("Irrigation 2 ");
+                    OpenGarden.irrigationOFF(2);
                     DEBUG_PRINTLN("->Close");
                 }
                 DEBUG_PRINTLN("->Done");
@@ -622,11 +655,11 @@ void setDateTime() {
 //Solenoid ON
 void valvePwrON(int out) {
   if (out == 1) {           // Turn ON by closing the circuit of Valve 1
-    digitalWrite(22, HIGH);
+    mcp.digitalWrite(2, HIGH);
     DEBUG_PRINT("->OFF 1 (1 - x)");
   }
   if (out == 2) {           // Turn ON by closing the circuit of Valve 2
-    digitalWrite(23, HIGH);
+    mcp.digitalWrite(3, HIGH);
     DEBUG_PRINT("->OFF 1 (x - 1)");
   }
 }
@@ -634,11 +667,11 @@ void valvePwrON(int out) {
 //Solenoid OFF
 void valvePwrOFF(int out) {
   if (out == 1) {             // Turn OFF by closing the circuit of Valve 1
-    digitalWrite(22, LOW);
+    mcp.digitalWrite(2, LOW);
     DEBUG_PRINT("->OFF 1 (0 - x)");
   }
   if (out == 2) {             // Turn OFF by closing the circuit of Valve 2
-    digitalWrite(23, LOW);
+    mcp.digitalWrite(3, LOW);
     DEBUG_PRINT("->OFF 2 (x - 0)");
   }
 }
@@ -647,27 +680,27 @@ void valvePwrOFF(int out) {
 void valvePolarity(int out) {
   if (out == 0) {
     DEBUG_PRINT("(Straight Polarity)");
-    digitalWrite(6, LOW);
-    digitalWrite(7, HIGH);
+    mcp.digitalWrite(0, LOW);
+    mcp.digitalWrite(1, HIGH);
     DEBUG_PRINT("->Opening (0 - 1)");
     delay(150);              // Wait 150msec
-    digitalWrite(6, HIGH);
-    digitalWrite(7, HIGH);
+    mcp.digitalWrite(0, HIGH);
+    mcp.digitalWrite(1, HIGH);
     DEBUG_PRINT("->OFFH (1 - 1)"); // Open
     delay(150);              // Wait 150msec
-    //digitalWrite(6, HIGH);   // Uncomment this for safe closing when you are not under UPS. In this case, the reverse polarity block below have to be commented!
-    //digitalWrite(7, LOW);
+    //mcp.digitalWrite(0, HIGH);   // Uncomment this for safe closing when you are not under UPS. In this case, the reverse polarity closing portion below have to be commented!
+    //mcp.digitalWrite(1, LOW);
     //DEBUG_PRINT("->Closing (1 - 0)");
     //delay(150);              // Wait 150msec
   }
   if (out == 1) {
     DEBUG_PRINT("->Reverse Polarity");
-    digitalWrite(6, HIGH);
-    digitalWrite(7, LOW);
+    mcp.digitalWrite(0, HIGH);
+    mcp.digitalWrite(1, LOW);
     DEBUG_PRINT("->Closing (1 - 0)");
     delay(150);              // Wait 150msec
-    digitalWrite(6, LOW);
-    digitalWrite(7, LOW);
+    mcp.digitalWrite(0, LOW);
+    mcp.digitalWrite(1, LOW);
     DEBUG_PRINT("->OFFL (0 - 0)"); // Closed
     delay(150);              // Wait 150msec
   }
