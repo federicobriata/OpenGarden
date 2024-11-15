@@ -53,6 +53,7 @@
 #if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__)
 
 #define RFM_IRQ     2
+#define RFM_INT     INT0
 #define SS_DDR      DDRB
 #define SS_PORT     PORTB
 #define SS_BIT      0
@@ -65,6 +66,7 @@
 #elif defined(__AVR_ATmega644P__)
 
 #define RFM_IRQ     10
+#define RFM_INT     INT0
 #define SS_DDR      DDRB
 #define SS_PORT     PORTB
 #define SS_BIT      4
@@ -77,6 +79,7 @@
 #elif defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny44__)
 
 #define RFM_IRQ     2
+#define RFM_INT     INT0
 #define SS_DDR      DDRB
 #define SS_PORT     PORTB
 #define SS_BIT      1
@@ -86,16 +89,19 @@
 #define SPI_MOSI    5     // PA5, pin 8
 #define SPI_SCK     6     // PA4, pin 9
 
-#elif defined(__AVR_ATmega32U4__) //Arduino Leonardo, YUN
+#elif defined(__AVR_ATmega32U4__) //Arduino Leonardo
 
-//#define RFM_IRQ     0	    // PD0, pin 18, INT0, Digital3
-#define RFM_IRQ     2	    // PD1, pin 19, INT1, Digital2
+//#define RFM_IRQ     0       // PD0, pin 18, INT0, Digital3
+//#define RFM_INT     INT0
+#define RFM_IRQ     2       // PD1, pin 19, INT1, Digital2
+#define RFM_INT     INT1
+//#define RFM_IRQ     7     // PE6, INT4, Digital7 - Adafruit Feather M0 RFM96
+//#define RFM_INT     INT4
 #define SS_DDR      DDRB
 #define SS_PORT     PORTB
 #define SS_BIT      6	    // PB6, pin 30, Digital10
 
-#define SPI_SS      10     // PB6, pin 30, Digital10
-//#define SPI_SS      17     // PB0, pin 8, Digital17 (RXLED)
+#define SPI_SS      10    // PB6, pin 30, Digital10
 #define SPI_MISO    14    // PB3, pin 11, Digital14
 #define SPI_MOSI    16    // PB2, pin 10, Digital16
 #define SPI_SCK     15    // PB1, pin 9, Digital15
@@ -104,6 +110,7 @@
 
 // ATmega168, ATmega328, etc.
 #define RFM_IRQ     2     // 2=JeeNode, 18=JeeNode pin change
+#define RFM_INT     INT0
 //#define RFM_IRQ       1     // PCINT1=JeeNode Block pin change
 #define SS_DDR      DDRB
 #define SS_PORT     PORTB
@@ -192,7 +199,7 @@ void rf12_set_cs (uint8_t pin) {
 void rf12_spiInit () {
     bitSet(SS_PORT, cs_pin);
     bitSet(SS_DDR, cs_pin);
-    digitalWrite(SPI_SS, HIGH);
+    digitalWrite(SPI_SS, 1);
     pinMode(SPI_SS, OUTPUT);
     pinMode(SPI_MOSI, OUTPUT);
     pinMode(SPI_MISO, INPUT);
@@ -296,7 +303,7 @@ uint16_t rf12_control(uint16_t cmd) {
         bitClear(PCICR, PCIE2);
     #endif
 #else
-    bitClear(EIMSK, INT1);
+    bitClear(EIMSK, RFM_INT);
 #endif
    uint16_t r = rf12_xferSlow(cmd);
 #if PINCHG_IRQ
@@ -308,13 +315,13 @@ uint16_t rf12_control(uint16_t cmd) {
         bitSet(PCICR, PCIE2);
     #endif
 #else
-    bitSet(EIMSK, INT1);
+    bitSet(EIMSK, RFM_INT);
 #endif
 #else
     // ATtiny
-    bitClear(GIMSK, INT0);
+    bitClear(GIMSK, RFM_INT);
     uint16_t r = rf12_xferSlow(cmd);
-    bitSet(GIMSK, INT0);
+    bitSet(GIMSK, RFM_INT);
 #endif
     return r;
 }
